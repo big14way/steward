@@ -31,3 +31,5 @@ TELEGRAM_CHAT = os.getenv("TELEGRAM_CHAT")
 ABI_DIR = Path(os.getenv("ABI_DIR", Path(__file__).resolve().parent.parent / "contracts" / "abi"))
 DECIDE_EVERY = int(os.getenv("DECIDE_EVERY", "300"))
 SIGNALS_EVERY = int(os.getenv("SIGNALS_EVERY", "60"))
+TREASURY_EVERY = int(os.getenv("TREASURY_EVERY", str(6 * 3600)))
+SWEEP_MIN = int(os.getenv("SWEEP_MIN", "50000000"))      # don't bother sweeping less than 50 USDC

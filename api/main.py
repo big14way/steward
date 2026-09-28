@@ -299,6 +299,56 @@ def stats():
     return db.stats()
 
 
+class TreasuryIn(BaseModel):
+    action: str          # SWEEP | REDEEM
+    assets: int
+    shares: int
+    tx: str
+    hash: str
+    record_tx: str | None = None
+    bal_after: int
+    obligations: int
+    canonical: str
+
+
+@app.post("/treasury", dependencies=[Depends(agent_auth)])
+def save_treasury(t: TreasuryIn):
+    with db.conn() as c:
+        c.execute("INSERT INTO treasury(action,assets,shares,tx,created_at,hash,record_tx,bal_after,obligations,canonical) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (t.action, t.assets, t.shares, t.tx, int(time.time()), t.hash, t.record_tx, t.bal_after, t.obligations, t.canonical))
+    return {"ok": True}
+
+
+@app.get("/treasury")
+def list_treasury(limit: int = 100):
+    with db.conn() as c:
+        rows = [dict(r) for r in c.execute("SELECT * FROM treasury ORDER BY created_at DESC LIMIT ?", (limit,))]
+    out = {"events": rows, "sweeper": os.environ.get("YIELD_SWEEPER")}
+    if os.environ.get("YIELD_SWEEPER"):
+        try:
+            sw = w3.eth.contract(address=Web3.to_checksum_address(os.environ["YIELD_SWEEPER"]), abi=signer.abi("YieldSweeper"))
+            vault = w3.eth.contract(address=sw.functions.VAULT().call(), abi=signer.abi("MockUSYC"))
+            usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+            shares = vault.functions.balanceOf(sw.address).call()
+            out.update({"balance": usdc.functions.balanceOf(sw.address).call(), "floor": sw.functions.reserveFloor().call(),
+                        "shares": shares, "position_assets": vault.functions.convertToAssets(shares).call() if shares else 0, "vault": vault.address})
+        except Exception as e:  # chain unreachable → still return the log
+            out["error"] = str(e)[:200]
+    return out
+
+
+class TreasuryFundIn(BaseModel):
+    owner_secret: str
+    amount: int
+
+
+@app.post("/treasury/fund")
+def fund_treasury(body: TreasuryFundIn):
+    """Owner tops up the YieldSweeper reserve with USDC (plain ERC-20 transfer)."""
+    owner_auth(body.owner_secret)
+    return signer.owner_transfer_usdc(os.environ["YIELD_SWEEPER"], body.amount)
+
+
 @app.post("/integrators", dependencies=[Depends(agent_auth)])
 def add_integrator(name: str, repo: str):
     with db.conn() as c:

@@ -24,6 +24,10 @@ def abi(name: str) -> list:
 ERC20_MIN = [
     {"name": "approve", "type": "function", "stateMutability": "nonpayable",
      "inputs": [{"name": "spender", "type": "address"}, {"name": "value", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"name": "transfer", "type": "function", "stateMutability": "nonpayable",
+     "inputs": [{"name": "to", "type": "address"}, {"name": "value", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"name": "balanceOf", "type": "function", "stateMutability": "view",
+     "inputs": [{"name": "a", "type": "address"}], "outputs": [{"type": "uint256"}]},
 ]
 
 
@@ -77,6 +81,15 @@ def owner_approve_and_pay(allowance_id: int, amount: int, decision_hash_hex: str
         import circle_client as cc
         return cc.owner_approve_and_pay(allowance_id, amount, decision_hash_hex)
     return _send_local(_am().functions.approveAndPay(allowance_id, amount, bytes.fromhex(decision_hash_hex.removeprefix("0x"))))
+
+
+def owner_transfer_usdc(to: str, amount: int) -> dict:
+    """Move USDC from the owner wallet to `to` (e.g. top up the YieldSweeper reserve)."""
+    if OWNER_SIGNER == "circle":
+        import circle_client as cc
+        return cc.owner_transfer_usdc(to, amount)
+    usdc = w3.eth.contract(address=Web3.to_checksum_address(USDC), abi=ERC20_MIN)
+    return _send_local(usdc.functions.transfer(Web3.to_checksum_address(to), amount))
 
 
 def owner_revoke(allowance_id: int) -> dict:

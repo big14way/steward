@@ -52,6 +52,39 @@ def _block_of(tx_hash: str) -> int:
     return w3.eth.get_transaction_receipt(tx_hash).blockNumber
 
 
+# ---- treasury (Day 6): YieldSweeper + 4626 vault ----
+from config import YIELD_SWEEPER  # noqa: E402
+
+ERC20_MIN = [{"name": "balanceOf", "type": "function", "stateMutability": "view",
+              "inputs": [{"name": "a", "type": "address"}], "outputs": [{"type": "uint256"}]}]
+USDC_ADDR = Web3.to_checksum_address("0x3600000000000000000000000000000000000000")
+SWEEPER = VAULT = None
+if YIELD_SWEEPER:
+    SWEEPER = w3.eth.contract(address=Web3.to_checksum_address(YIELD_SWEEPER), abi=_abi("YieldSweeper"))
+    VAULT = w3.eth.contract(address=SWEEPER.functions.VAULT().call(), abi=_abi("MockUSYC"))   # any ERC-4626 shape
+_usdc = w3.eth.contract(address=USDC_ADDR, abi=ERC20_MIN)
+
+
+def treasury_state() -> dict:
+    shares = VAULT.functions.balanceOf(SWEEPER.address).call()
+    return {"balance": _usdc.functions.balanceOf(SWEEPER.address).call(), "floor": SWEEPER.functions.reserveFloor().call(),
+            "shares": shares, "position_assets": VAULT.functions.convertToAssets(shares).call() if shares else 0}
+
+
+def sweep(obligations: int):
+    if SIGNER == "circle":
+        r = cc.agent_sweep(obligations)
+        return r["txHash"], _block_of(r["txHash"])
+    return _send_local(SWEEPER.functions.sweep(obligations))
+
+
+def redeem(shares: int):
+    if SIGNER == "circle":
+        r = cc.agent_redeem(shares)
+        return r["txHash"], _block_of(r["txHash"])
+    return _send_local(SWEEPER.functions.redeem(shares))
+
+
 def get_allowance(id: int) -> dict:
     a = AM.functions.allowances(id).call()
     keys = ["owner", "agent", "payee", "capPerPeriod", "perTxCap", "period", "periodStart", "expiry", "spentThisPeriod", "funded", "revoked"]

@@ -8,7 +8,7 @@ import chain
 import db
 import notify
 import screen
-from config import API_BASE, API_SECRET, DECIDE_EVERY, LLM, RESERVE_FLOOR, SIGNALS_EVERY
+from config import API_BASE, API_SECRET, DECIDE_EVERY, LLM, RESERVE_FLOOR, SIGNALS_EVERY, TREASURY_EVERY
 from decision import ACTION_CODE, DecisionInput, canonical_json, decide, decision_hash, remainder_hash
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -81,9 +81,16 @@ async def loop_decide():
 
 
 async def loop_treasury():
+    import treasury
+    await asyncio.sleep(20)
     while True:
-        # ADAPT Day 6: compute idle = funded - floor - obligations; call YieldSweeper.sweep/redeem; log SWEEP/REDEEM via chain.record
-        await asyncio.sleep(6 * 3600)
+        try:
+            ev = treasury.cycle()   # sweep idle → vault, or redeem ahead of obligations; records SWEEP/REDEEM on-chain
+            if ev:
+                await notify.info(f"💰 {ev['action']} {ev['assets']/1e6:.2f} USDC ({ev['shares']} shares) · tx {ev['tx'][:14]}…")
+        except Exception as e:
+            log.exception("treasury cycle failed: %s", e)
+        await asyncio.sleep(TREASURY_EVERY)
 
 
 async def main():

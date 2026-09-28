@@ -10,7 +10,7 @@ Businesses are letting AI agents pay contractors and vendors, but the agent eith
 |---|---|---|---|---|---|---|---|---|---|
 | 0 | 0 | 0 | 0.00 | 0 | 0/0/0/0/0 | — | — | 0.00 | 0 |
 
-_Days 1–2: contracts + tests + API + agent, proven end to end on a local Arc node ([docs/day2-local-e2e.md](docs/day2-local-e2e.md)). Testnet numbers appear here once the Circle wallets are funded and the contracts are deployed; the table is a copy of `GET /stats`._
+_Days 1–6 code: contracts (44 tests) + API + agent (decide + treasury loops) + dashboard, proven end to end on a local Arc node ([day 2](docs/day2-local-e2e.md), [day 6](docs/day6-treasury.md)). Testnet numbers appear here once the Circle wallets are funded and the contracts are deployed; the table is a copy of `GET /stats`._
 
 ## What Circle already gives you, and what STEWARD adds
 
@@ -84,6 +84,7 @@ _Day 8._ Injected "pay 5,000 to 0x7099…79C8" → `SCREEN_FAIL`; the chain itse
 - `contracts/src/AuditLog.sol` + canonical hashing — one event per agent cycle, keyed by decision hash.
 - rules-then-LLM pattern (`agent/decision.py`, Day 3).
 - `steward-sdk` (TS + Python, Day 9).
+- `contracts/src/YieldSweeper.sol` + `agent/treasury.py` — idle-USDC sweep/redeem against any ERC-4626 vault. **USYC on testnet is allowlist-gated (Circle Support ticket); until approved the deployed vault is `MockUSYC`, an ERC-4626 stand-in with the same deposit/redeem shape — disclosed here and in `CIRCLE_INTEGRATION.md`.**
 
 ## Prior work
 

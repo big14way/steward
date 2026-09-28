@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { get, usd, tx, when, short, ACTION_COLOR, type Stats, type Decision, type Health } from "@/lib/api";
+import { get, usd, tx, when, short, ACTION_COLOR, EXPLORER, type Stats, type Decision, type Health, type Treasury } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +8,11 @@ async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
 }
 
 export default async function Home() {
-  const [s, d, h] = await Promise.all([
+  const [s, d, h, t] = await Promise.all([
     safe(get<Stats>("/stats"), null as unknown as Stats),
     safe(get<Decision[]>("/decisions?limit=20"), [] as Decision[]),
     safe(get<Health>("/health"), null as unknown as Health),
+    safe(get<Treasury>("/treasury"), null as unknown as Treasury),
   ]);
   if (!s) {
     return <div className="text-zinc-400">API unreachable at <code>{process.env.NEXT_PUBLIC_API}</code>. Start <code>api/</code> first.</div>;
@@ -42,6 +43,22 @@ export default async function Home() {
         by action: {Object.entries(s.by_action).map(([a, n]) => `${a} ${n}`).join(" · ")} · SDK integrators {s.integrators} · updated {when(s.updated_at)}
         {h && <> · AllowanceManager <a className="underline" href={`${h.explorer}/address/${h.allowance_manager}`} target="_blank">{short(h.allowance_manager)}</a> · block {h.block} · owner signer {h.owner_signer}</>}
       </div>
+      {t && t.sweeper && (
+        <div className="rounded-lg border border-zinc-800 p-4 space-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-4 text-sm">
+            <span className="font-medium">Treasury</span>
+            <span className="text-zinc-400">idle USDC parks in {t.vault ? <a className="underline" href={`${EXPLORER}/address/${t.vault}`} target="_blank">the vault</a> : "the vault"} between pay cycles; floor {usd(t.floor ?? 0)} stays liquid</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div><div className="text-zinc-500">liquid</div><div className="text-base">{usd(t.balance ?? 0)}</div></div>
+            <div><div className="text-zinc-500">in vault</div><div className="text-base">{usd(t.position_assets ?? 0)}</div></div>
+            <div><div className="text-zinc-500">events</div><div className="text-base">{t.events.length}</div></div>
+          </div>
+          {t.events.slice(0, 3).map((e) => (
+            <div key={e.id} className="text-xs text-zinc-400 font-mono">{e.action} {usd(e.assets)} · <a className="underline" href={tx(e.tx)} target="_blank">{short(e.tx)}</a> · {when(e.created_at)}</div>
+          ))}
+        </div>
+      )}
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-medium">Latest decisions</h2>
         <Link href="/decisions" className="text-sm text-zinc-400 underline">all →</Link>

@@ -32,6 +32,10 @@ export type Milestone = {
   id: string; allowance_id: number; payee: string; title: string; amount: number; evidence_url: string; evidence_hash: string;
   status: string; created_at: number; paid_tx?: string | null; paid_block?: number | null; last_error?: string | null;
 };
+export type TreasuryEvent = { id: number; action: string; assets: number; shares: number; tx: string; hash?: string; record_tx?: string | null; created_at: number };
+export type Treasury = {
+  events: TreasuryEvent[]; sweeper?: string | null; vault?: string; balance?: number; floor?: number; shares?: number; position_assets?: number; error?: string;
+};
 export type Health = { ok: boolean; chain_id: number; block: number; allowance_manager: string; owner_signer: string; owner: string; explorer: string };
 
 export const ACTION_COLOR: Record<string, string> = {

@@ -26,11 +26,16 @@ def init() -> None:
             escalation_hash TEXT);
         CREATE TABLE IF NOT EXISTS payers(address TEXT PRIMARY KEY, name TEXT, created_at INT);
         CREATE TABLE IF NOT EXISTS integrators(name TEXT PRIMARY KEY, repo TEXT, created_at INT);
-        CREATE TABLE IF NOT EXISTS treasury(id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, assets INT, shares INT, tx TEXT, created_at INT);
+        CREATE TABLE IF NOT EXISTS treasury(id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, assets INT, shares INT, tx TEXT, created_at INT,
+            hash TEXT, record_tx TEXT, bal_after INT, obligations INT, canonical TEXT);
         """)
         cols = {r[1] for r in c.execute("PRAGMA table_info(decisions)")}
         if "escalation_hash" not in cols:   # migration for DBs created before the PARTIAL remainder-hash fix
             c.execute("ALTER TABLE decisions ADD COLUMN escalation_hash TEXT")
+        tcols = {r[1] for r in c.execute("PRAGMA table_info(treasury)")}
+        for col, typ in (("hash", "TEXT"), ("record_tx", "TEXT"), ("bal_after", "INT"), ("obligations", "INT"), ("canonical", "TEXT")):
+            if col not in tcols:
+                c.execute(f"ALTER TABLE treasury ADD COLUMN {col} {typ}")
 
 
 def stats() -> dict:

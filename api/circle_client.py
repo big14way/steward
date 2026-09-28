@@ -96,5 +96,17 @@ def agent_escalate(allowance_id: int, amount: int, decision_hash_hex: str, reaso
     return wait(execute(_agent(), _am(), "escalate(uint256,uint128,bytes32,string)", [str(allowance_id), str(amount), decision_hash_hex, reason[:200]]))
 
 
+def agent_sweep(obligations: int):
+    return wait(execute(_agent(), os.environ["YIELD_SWEEPER"], "sweep(uint128)", [str(obligations)]))
+
+
+def agent_redeem(shares: int):
+    return wait(execute(_agent(), os.environ["YIELD_SWEEPER"], "redeem(uint256)", [str(shares)]))
+
+
+def owner_transfer_usdc(to: str, amount: int):
+    return wait(execute(_owner(), USDC, "transfer(address,uint256)", [to, str(amount)]))
+
+
 def agent_record(allowance_id: int, decision_hash_hex: str, action_code: int, amount: int):
     return wait(execute(_agent(), os.environ["AUDIT_LOG"], "record(uint256,bytes32,uint8,uint128)", [str(allowance_id), decision_hash_hex, str(action_code), str(amount)]))
