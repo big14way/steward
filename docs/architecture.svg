@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8b93a7"/>
+    </marker>
+    <style>
+      .box { fill: #14161c; stroke: #3a3f4d; stroke-width: 1.5; rx: 10; }
+      .chain { fill: #0f1a17; stroke: #2e7d5b; stroke-width: 2; rx: 12; }
+      .circle { fill: #1a1526; stroke: #6f4fb8; stroke-width: 1.5; rx: 10; }
+      .t { fill: #e6e8ee; font-size: 17px; font-weight: 600; }
+      .s { fill: #a3a9b8; font-size: 13px; }
+      .m { fill: #8fd3b2; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .lbl { fill: #c8cdd8; font-size: 12.5px; }
+      .edge { stroke: #8b93a7; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .edge2 { stroke: #6f4fb8; stroke-width: 1.6; fill: none; marker-end: url(#arrow); stroke-dasharray: 5 4; }
+      .title { fill: #ffffff; font-size: 24px; font-weight: 700; }
+      .sub { fill: #a3a9b8; font-size: 14px; }
+    </style>
+  </defs>
+  <rect width="1400" height="760" fill="#0b0c10"/>
+  <text x="40" y="46" class="title">STEWARD — on-chain allowances · decision log · human escalation for agents that pay people on Arc</text>
+  <text x="40" y="70" class="sub">Rules set amounts, the LLM writes the reason, the contract enforces the caps, every cycle is hashed on-chain.</text>
+
+  <!-- Owner -->
+  <rect x="40" y="110" width="300" height="130" class="box"/>
+  <text x="60" y="140" class="t">Owner (Acme Studio)</text>
+  <text x="60" y="164" class="s">Next.js dashboard · Telegram approve button</text>
+  <text x="60" y="186" class="m">create · fund · revoke · approveAndPay</text>
+  <text x="60" y="212" class="s">signs server-side via Circle Dev-Controlled wallet</text>
+
+  <!-- Contractor -->
+  <rect x="40" y="290" width="300" height="130" class="box"/>
+  <text x="60" y="320" class="t">Contractor (freelancer)</text>
+  <text x="60" y="344" class="s">EIP-712 signed milestone (title, amount,</text>
+  <text x="60" y="362" class="s">evidence hash, nonce, payoutChain)</text>
+  <text x="60" y="390" class="m">/contractor page · submit_milestone.py</text>
+  <text x="60" y="410" class="s">receives USDC on Arc (or Base Sepolia via CCTP V2)</text>
+
+  <!-- API -->
+  <rect x="420" y="200" width="300" height="150" class="box"/>
+  <text x="440" y="230" class="t">FastAPI + SQLite</text>
+  <text x="440" y="254" class="m">/milestones  /decisions  /escalations</text>
+  <text x="440" y="274" class="m">/allowances  /treasury  /stats  /webhooks/circle</text>
+  <text x="440" y="300" class="s">verifies milestone signatures against the on-chain payee</text>
+  <text x="440" y="320" class="s">owner signer → Circle wallet (local key = fallback)</text>
+  <text x="440" y="340" class="s">Circle webhook signature check (from arc-escrow)</text>
+
+  <!-- Agent -->
+  <rect x="420" y="400" width="300" height="200" class="box"/>
+  <text x="440" y="430" class="t">Agent (Python, systemd)</text>
+  <text x="440" y="454" class="s">signals 60 s · decide 5 min · treasury 6 h</text>
+  <text x="440" y="480" class="m">R1 screen → R2 evidence → R3 per-tx</text>
+  <text x="440" y="498" class="m">→ R4 liquidity/period → R5 pay</text>
+  <text x="440" y="524" class="s">LLM (Groq / Claude) writes reason + timing only,</text>
+  <text x="440" y="542" class="s">JSON-schema validated, rules-only fallback</text>
+  <text x="440" y="568" class="m">hash = keccak256(canonical JSON of the decision)</text>
+  <text x="440" y="588" class="s">signer: Circle agent wallet (or local key)</text>
+
+  <!-- Chain -->
+  <rect x="820" y="110" width="540" height="500" class="chain"/>
+  <text x="840" y="140" class="t">Arc Testnet · chain 5042002 · USDC is gas · 20 gwei floor</text>
+
+  <rect x="840" y="160" width="500" height="150" class="box"/>
+  <text x="860" y="188" class="t">AllowanceManager.sol</text>
+  <text x="860" y="212" class="m">Allowance{owner, agent, payee, capPerPeriod, perTxCap,</text>
+  <text x="860" y="230" class="m">  period, periodStart, expiry, spentThisPeriod, funded, revoked}</text>
+  <text x="860" y="256" class="m">pay(id, amount, decisionHash, memo)   escalate(...)</text>
+  <text x="860" y="274" class="m">approveAndPay(id, amount, hash)   revoke(id)   fund(id, amt)</text>
+  <text x="860" y="298" class="s">usedDecision[hash] — one hash pays once, shared by pay and approve</text>
+
+  <rect x="840" y="330" width="240" height="120" class="box"/>
+  <text x="860" y="358" class="t">AuditLog.sol</text>
+  <text x="860" y="382" class="m">record(allowanceId, hash,</text>
+  <text x="860" y="400" class="m">  action, amount)</text>
+  <text x="860" y="424" class="s">every cycle incl. HOLD,</text>
+  <text x="860" y="440" class="s">SWEEP / REDEEM for treasury</text>
+
+  <rect x="1100" y="330" width="240" height="120" class="box"/>
+  <text x="1120" y="358" class="t">YieldSweeper.sol</text>
+  <text x="1120" y="382" class="m">sweep(obligations)</text>
+  <text x="1120" y="400" class="m">redeem(shares)</text>
+  <text x="1120" y="424" class="s">idle USDC → ERC-4626 vault</text>
+  <text x="1120" y="440" class="s">USYC (allowlist) or MockUSYC</text>
+
+  <rect x="840" y="470" width="500" height="120" class="box"/>
+  <text x="860" y="498" class="t">Arc protocol rules the design leans on</text>
+  <text x="860" y="522" class="s">USDC 0x3600… is the native balance seen through a 6-dp ERC-20 window</text>
+  <text x="860" y="542" class="s">transfers to the seeded blocklisted 0x7099…79C8 revert at runtime ("Blocked address")</text>
+  <text x="860" y="562" class="s">block.timestamp non-decreasing → _roll() uses ≥ · CCTP V2 domain 26 → Base Sepolia 6</text>
+
+  <!-- Circle -->
+  <rect x="40" y="470" width="300" height="140" class="circle"/>
+  <text x="60" y="500" class="t">Circle</text>
+  <text x="60" y="524" class="s">Developer-Controlled Wallets (owner, agent,</text>
+  <text x="60" y="542" class="s">contractor, judge) on ARC-TESTNET</text>
+  <text x="60" y="562" class="s">Circle Contracts (import + event monitor)</text>
+  <text x="60" y="580" class="s">CCTP V2 · USDC · USYC · notifications webhook</text>
+
+  <!-- edges -->
+  <path d="M340 175 C 380 175, 380 240, 420 240" class="edge"/>
+  <text x="352" y="205" class="lbl">owner actions</text>
+  <path d="M340 355 C 380 355, 380 280, 420 280" class="edge"/>
+  <text x="346" y="330" class="lbl">signed milestone</text>
+  <path d="M570 400 L 570 350" class="edge"/>
+  <text x="580" y="380" class="lbl">poll pending · post decisions</text>
+  <path d="M720 240 C 780 240, 780 235, 840 235" class="edge"/>
+  <text x="728" y="228" class="lbl">create / fund / approve</text>
+  <path d="M720 500 C 780 500, 780 270, 840 270" class="edge"/>
+  <text x="728" y="470" class="lbl">pay / escalate</text>
+  <path d="M720 540 C 790 540, 790 390, 840 390" class="edge"/>
+  <text x="728" y="558" class="lbl">record()</text>
+  <path d="M720 580 C 790 580, 790 462, 850 462 L 1085 462 L 1105 452" class="edge"/>
+  <text x="728" y="598" class="lbl">sweep / redeem</text>
+  <path d="M340 540 C 380 540, 380 330, 420 330" class="edge2"/>
+  <path d="M340 560 C 400 560, 400 590, 420 590" class="edge2"/>
+  <path d="M900 612 L 900 640 L 380 640 C 352 640, 352 430, 340 410" class="edge" opacity="0.7"/>
+  <text x="560" y="660" class="lbl" opacity="0.85">USDC paid to the payee (Arc), or burned via CCTP V2 and minted on Base Sepolia</text>
+
+  <text x="40" y="690" class="sub">Trust boundary: the agent can only ever call pay() for the payee the owner fixed, under the caps the owner set, with a hash that pays once.</text>
+  <text x="40" y="712" class="sub">Over-policy → escalate() moves nothing; a human approves with one tap; SCREEN_FAIL can never be approved. Local test: arc-anvil --network arc --chain-id 5042002.</text>
+  <text x="40" y="740" class="sub">github.com/big14way/steward · Tameion Agents Hackathon (Canteen × Circle × Arc) · Sep 27 – Oct 10, 2026</text>
+</svg>
