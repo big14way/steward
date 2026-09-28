@@ -10,7 +10,7 @@ Businesses are letting AI agents pay contractors and vendors, but the agent eith
 |---|---|---|---|---|---|---|---|---|---|
 | 0 | 0 | 0 | 0.00 | 0 | 0/0/0/0/0 | — | — | 0.00 | 0 |
 
-_Day 1: contracts + tests. Nothing deployed yet. This table is regenerated from `GET /stats` once the agent is live (Day 2)._
+_Days 1–2: contracts + tests + API + agent, proven end to end on a local Arc node ([docs/day2-local-e2e.md](docs/day2-local-e2e.md)). Testnet numbers appear here once the Circle wallets are funded and the contracts are deployed; the table is a copy of `GET /stats`._
 
 ## What Circle already gives you, and what STEWARD adds
 
@@ -60,6 +60,8 @@ Rules set amounts; the LLM never does. Per milestone the agent decides **PAY / P
 
 The LLM writes a one-paragraph reason and picks timing (`now` / `batch_friday`), validated against a JSON schema with a rules-only fallback. The whole record is canonicalised (sorted keys, no whitespace) and keccak-hashed; that hash is what `AuditLog.record()` and `AllowanceManager.pay()` see. Every cycle is recorded, including `HOLD`.
 
+**Idempotency detail found in local testing:** `usedDecision[hash]` is shared by `pay()` and `approveAndPay()`, so a `PARTIAL` (which pays part now) cannot have its remainder approved under the same hash. The remainder is escalated under `keccak256("STEWARD/remainder" ‖ hash)`, which the owner's `approveAndPay()` consumes exactly once. `ESCALATE` and `SCREEN_FAIL` move nothing, so they keep the decision hash itself. Both hashes are stored per decision and returned by `GET /decisions/{hash}` with a replay check.
+
 ## Traction
 
 Before Tameion: 0. During: see the stats table above (dated).
@@ -101,7 +103,15 @@ arc-forge test --fork-url http://127.0.0.1:8545 --match-contract ArcForkTest -vv
 
 # Arc testnet fork
 arc-forge test --fork-url https://rpc.testnet.arc.io --match-contract ArcForkTest -vvv
+
+# API + agent against the local Arc node (full walkthrough: docs/day2-local-e2e.md)
+cd contracts && ./export_abi.sh                          # ABIs → contracts/abi/, read by agent + api
+cd api   && cp .env.example .env && uv venv --python 3.11 .venv && uv pip install -r requirements.txt && .venv/bin/uvicorn main:app --port 8001
+cd agent && cp .env.example .env && uv venv --python 3.11 .venv && uv pip install -r requirements.txt && .venv/bin/python main.py
+python api/scripts/submit_milestone.py --allowance 0 --title "logo v2" --amount 150 --evidence https://… --key <payee key> --am <AllowanceManager>
 ```
+
+**Signers.** Owner and agent writes go through Circle Developer-Controlled Wallets (`OWNER_SIGNER=circle`, `SIGNER=circle`) so no key lives on the server. A local-key path (`…=local`) exists for the arc-anvil walkthrough and as a documented fallback; `GET /health` reports which one is active.
 
 ## Roadmap
 

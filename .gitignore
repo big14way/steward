@@ -12,7 +12,7 @@ steward_tameion_build_spec.md
 # foundry
 contracts/out/
 contracts/cache/
-contracts/broadcast/**/dry-run/
+contracts/broadcast/
 
 # python
 __pycache__/

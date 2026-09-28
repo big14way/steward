@@ -1,0 +1,9 @@
+web3>=7.0
+eth-account>=0.13
+httpx
+pydantic>=2
+jsonschema
+groq
+anthropic
+python-telegram-bot>=21
+python-dotenv

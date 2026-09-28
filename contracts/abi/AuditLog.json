@@ -1,0 +1,73 @@
+[
+  {
+    "type": "function",
+    "name": "record",
+    "inputs": [
+      {
+        "name": "allowanceId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "decisionHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "action",
+        "type": "uint8",
+        "internalType": "enum AuditLog.Action"
+      },
+      {
+        "name": "amount",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Decision",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "allowanceId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "decisionHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "action",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum AuditLog.Action"
+      },
+      {
+        "name": "amount",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "blockNumber",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  }
+]

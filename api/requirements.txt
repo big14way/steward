@@ -7,3 +7,4 @@ web3>=7.0
 eth-account>=0.13
 httpx
 pydantic>=2
+cryptography
