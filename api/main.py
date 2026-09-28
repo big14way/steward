@@ -48,7 +48,8 @@ def owner_auth(secret: str):
 DOMAIN = {"name": "STEWARD", "version": "1", "chainId": CHAIN_ID, "verifyingContract": AM_ADDR}
 TYPES = {"Milestone": [{"name": "allowanceId", "type": "uint256"}, {"name": "title", "type": "string"},
                        {"name": "amount", "type": "uint128"}, {"name": "evidenceHash", "type": "bytes32"},
-                       {"name": "nonce", "type": "string"}]}
+                       {"name": "nonce", "type": "string"}, {"name": "payoutChain", "type": "string"}]}
+PAYOUT_CHAINS = ("arc", "base-sepolia")
 
 
 def evidence_hash(url: str) -> str:
@@ -72,17 +73,21 @@ class MilestoneIn(BaseModel):
     evidence_url: str = ""
     nonce: str
     signature: str
+    payout_chain: str = "arc"   # "arc" (pay on Arc) | "base-sepolia" (owner-executed CCTP V2 payout); part of the signed data
 
 
 @app.post("/milestones")
 def submit_milestone(m: MilestoneIn):
+    if m.payout_chain not in PAYOUT_CHAINS:
+        raise HTTPException(400, f"payout_chain must be one of {PAYOUT_CHAINS}")
     a = _allowance(m.allowance_id)
     payee = a["payee"]
     if payee == "0x0000000000000000000000000000000000000000":
         raise HTTPException(404, "no such allowance")
     ev = evidence_hash(m.evidence_url)
     msg = encode_typed_data(domain_data=DOMAIN, message_types=TYPES, message_data={
-        "allowanceId": m.allowance_id, "title": m.title, "amount": m.amount, "evidenceHash": ev, "nonce": m.nonce})
+        "allowanceId": m.allowance_id, "title": m.title, "amount": m.amount, "evidenceHash": ev, "nonce": m.nonce,
+        "payoutChain": m.payout_chain})
     try:
         who = Account.recover_message(msg, signature=m.signature)
     except Exception as e:
@@ -93,9 +98,9 @@ def submit_milestone(m: MilestoneIn):
     with db.conn() as c:
         if c.execute("SELECT 1 FROM milestones WHERE signature=?", (m.signature,)).fetchone():
             raise HTTPException(409, "milestone already submitted")
-        c.execute("INSERT INTO milestones(id,allowance_id,payee,title,amount,evidence_url,evidence_hash,signature,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                  (mid, m.allowance_id, payee, m.title, m.amount, m.evidence_url, ev, m.signature, "pending", int(time.time())))
-    return {"id": mid, "status": "pending", "payee": payee, "evidence_hash": ev}
+        c.execute("INSERT INTO milestones(id,allowance_id,payee,title,amount,evidence_url,evidence_hash,signature,status,created_at,payout_chain) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                  (mid, m.allowance_id, payee, m.title, m.amount, m.evidence_url, ev, m.signature, "pending", int(time.time()), m.payout_chain))
+    return {"id": mid, "status": "pending", "payee": payee, "evidence_hash": ev, "payout_chain": m.payout_chain}
 
 
 @app.get("/milestones")
@@ -220,6 +225,19 @@ def approve(hash: str, body: ApproveIn):
         raise HTTPException(400, "screen failures cannot be approved")
     if d["approved_tx"]:
         raise HTTPException(409, "already approved")
+    with db.conn() as c:
+        m = c.execute("SELECT * FROM milestones WHERE id=?", (d["milestone_id"],)).fetchone()
+    if m and (m["payout_chain"] or "arc") == "base-sepolia":
+        # Cross-chain payout (Day 7): the owner wallet burns on Arc via CCTP V2 and the contractor is minted on Base Sepolia.
+        # This bypasses AllowanceManager caps, which is exactly why it only runs with owner authority, here.
+        if signer.OWNER_SIGNER != "circle":
+            raise HTTPException(400, "cross-chain payout needs Circle Developer-Controlled wallets (OWNER_SIGNER=circle)")
+        import cctp
+        r = cctp.payout_crosschain(d["remainder"], m["payee"], os.environ["OWNER_WALLET_ID"])
+        with db.conn() as c:
+            c.execute("UPDATE decisions SET approved_tx=?, mint_tx=?, human_agreed=1 WHERE hash=?", (r["burn_tx"], r["mint_tx"], hash))
+            c.execute("UPDATE milestones SET status='paid', paid_tx=? WHERE id=?", (r["mint_tx"], d["milestone_id"]))
+        return {"state": "COMPLETE", "txHash": r["burn_tx"], "mint_tx": r["mint_tx"], "chain": "base-sepolia"}
     # PARTIAL remainders are keyed by their derived escalation hash (the decision hash was consumed by pay()).
     r = signer.owner_approve_and_pay(d["allowance_id"], d["remainder"], d["escalation_hash"] or hash)
     with db.conn() as c:

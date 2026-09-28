@@ -53,6 +53,13 @@ class Rules(unittest.TestCase):
         d = decide(inp(), use_llm=False)
         self.assertEqual((d.action, d.amount, d.remainder, d.source, d.timing), ("PAY", 150 * ONE, 0, "rules", "now"))
 
+    def test_crosschain_pay_becomes_owner_escalation(self):
+        d = decide(inp(payout_chain="base-sepolia"), use_llm=False)
+        self.assertEqual((d.rule, d.action, d.amount, d.remainder), ("R5_pay_xchain", "ESCALATE", 0, 150 * ONE))
+        # but the screen still wins, and a hold is still a hold
+        self.assertEqual(decide(inp(payout_chain="base-sepolia", payee_screen="denylist"), use_llm=False).action, "SCREEN_FAIL")
+        self.assertEqual(decide(inp(payout_chain="base-sepolia", evidence_present=False), use_llm=False).action, "HOLD")
+
 
 class Hashing(unittest.TestCase):
     def test_canonical_is_sorted_and_compact(self):

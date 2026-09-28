@@ -16,7 +16,7 @@ from eth_account.messages import encode_typed_data
 
 TYPES = {"Milestone": [{"name": "allowanceId", "type": "uint256"}, {"name": "title", "type": "string"},
                        {"name": "amount", "type": "uint128"}, {"name": "evidenceHash", "type": "bytes32"},
-                       {"name": "nonce", "type": "string"}]}
+                       {"name": "nonce", "type": "string"}, {"name": "payoutChain", "type": "string"}]}
 
 
 def main() -> None:
@@ -29,6 +29,7 @@ def main() -> None:
     p.add_argument("--api", default="http://127.0.0.1:8001")
     p.add_argument("--am", required=True, help="AllowanceManager address")
     p.add_argument("--chain-id", type=int, default=5042002)
+    p.add_argument("--payout", choices=["arc", "base-sepolia"], default="arc", help="receive on Arc, or on Base Sepolia via CCTP V2 (owner-executed)")
     a = p.parse_args()
 
     amount = int(round(a.amount * 1e6))
@@ -36,11 +37,12 @@ def main() -> None:
     ev = "0x" + hashlib.sha256(a.evidence.encode()).hexdigest()
     domain = {"name": "STEWARD", "version": "1", "chainId": a.chain_id, "verifyingContract": a.am}
     msg = encode_typed_data(domain_data=domain, message_types=TYPES, message_data={
-        "allowanceId": a.allowance, "title": a.title, "amount": amount, "evidenceHash": ev, "nonce": nonce})
+        "allowanceId": a.allowance, "title": a.title, "amount": amount, "evidenceHash": ev, "nonce": nonce, "payoutChain": a.payout})
     acct = Account.from_key(a.key)
     sig = acct.sign_message(msg).signature.hex()
     sig = sig if sig.startswith("0x") else "0x" + sig
-    body = {"allowance_id": a.allowance, "title": a.title, "amount": amount, "evidence_url": a.evidence, "nonce": nonce, "signature": sig}
+    body = {"allowance_id": a.allowance, "title": a.title, "amount": amount, "evidence_url": a.evidence, "nonce": nonce, "signature": sig,
+            "payout_chain": a.payout}
     r = httpx.post(f"{a.api}/milestones", json=body, timeout=30)
     print(r.status_code, json.dumps(r.json(), indent=2))
     print(f"signed by {acct.address}")

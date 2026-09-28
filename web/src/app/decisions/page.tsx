@@ -1,4 +1,4 @@
-import { get, usd, tx, when, ACTION_COLOR, type Decision } from "@/lib/api";
+import { get, usd, tx, when, ACTION_COLOR, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
             {x.record_tx && <div>record <a className="underline" href={tx(x.record_tx)} target="_blank">{x.record_tx}</a></div>}
             {x.pay_tx && <div>pay <a className="underline" href={tx(x.pay_tx)} target="_blank">{x.pay_tx}</a></div>}
             {x.escalate_tx && <div>escalate <a className="underline" href={tx(x.escalate_tx)} target="_blank">{x.escalate_tx}</a></div>}
-            {x.approved_tx && <div>approved <a className="underline" href={tx(x.approved_tx)} target="_blank">{x.approved_tx}</a></div>}
+            {x.approved_tx && <div>{x.mint_tx ? "burn (Arc)" : "approved"} <a className="underline" href={tx(x.approved_tx)} target="_blank">{x.approved_tx}</a></div>}
+            {x.mint_tx && <div>mint (Base Sepolia) <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${x.mint_tx}`} target="_blank">{x.mint_tx}</a></div>}
             {x.human_agreed != null && <div>human {x.human_agreed ? "agreed (approved)" : "rejected"}</div>}
             {x.canonical && (
               <details className="mt-2"><summary className="cursor-pointer text-zinc-400">canonical JSON (replay: keccak256 of this text = hash)</summary>

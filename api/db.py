@@ -18,12 +18,12 @@ def init() -> None:
         CREATE TABLE IF NOT EXISTS milestones(
             id TEXT PRIMARY KEY, allowance_id INT, payee TEXT, title TEXT, amount INT,
             evidence_url TEXT, evidence_hash TEXT, signature TEXT, status TEXT DEFAULT 'pending',
-            created_at INT, paid_tx TEXT, paid_block INT, last_error TEXT, attempts INT DEFAULT 0);
+            created_at INT, paid_tx TEXT, paid_block INT, last_error TEXT, attempts INT DEFAULT 0, payout_chain TEXT DEFAULT 'arc');
         CREATE TABLE IF NOT EXISTS decisions(
             hash TEXT PRIMARY KEY, milestone_id TEXT, allowance_id INT, action TEXT, amount INT,
             remainder INT, rule TEXT, reason TEXT, source TEXT, canonical TEXT, record_tx TEXT, pay_tx TEXT,
             escalate_tx TEXT, approved_tx TEXT, human_agreed INT, created_at INT, timing TEXT DEFAULT 'now',
-            escalation_hash TEXT);
+            escalation_hash TEXT, mint_tx TEXT);
         CREATE TABLE IF NOT EXISTS payers(address TEXT PRIMARY KEY, name TEXT, created_at INT);
         CREATE TABLE IF NOT EXISTS integrators(name TEXT PRIMARY KEY, repo TEXT, created_at INT);
         CREATE TABLE IF NOT EXISTS treasury(id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, assets INT, shares INT, tx TEXT, created_at INT,
@@ -32,6 +32,11 @@ def init() -> None:
         cols = {r[1] for r in c.execute("PRAGMA table_info(decisions)")}
         if "escalation_hash" not in cols:   # migration for DBs created before the PARTIAL remainder-hash fix
             c.execute("ALTER TABLE decisions ADD COLUMN escalation_hash TEXT")
+        mcols = {r[1] for r in c.execute("PRAGMA table_info(milestones)")}
+        if "payout_chain" not in mcols:
+            c.execute("ALTER TABLE milestones ADD COLUMN payout_chain TEXT DEFAULT 'arc'")
+        if "mint_tx" not in cols:
+            c.execute("ALTER TABLE decisions ADD COLUMN mint_tx TEXT")
         tcols = {r[1] for r in c.execute("PRAGMA table_info(treasury)")}
         for col, typ in (("hash", "TEXT"), ("record_tx", "TEXT"), ("bal_after", "INT"), ("obligations", "INT"), ("canonical", "TEXT")):
             if col not in tcols:

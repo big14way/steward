@@ -17,8 +17,9 @@ export type Decision = {
   hash: string; milestone_id: string; allowance_id: number; action: string; amount: number; remainder: number;
   rule: string; reason: string; source: string; timing?: string; record_tx?: string | null; pay_tx?: string | null;
   escalate_tx?: string | null; approved_tx?: string | null; human_agreed?: number | null; created_at: number;
-  escalation_hash?: string | null; canonical?: string;
+  escalation_hash?: string | null; canonical?: string; mint_tx?: string | null;
 };
+export const BASE_SEPOLIA_EXPLORER = "https://sepolia.basescan.org";
 export type Stats = {
   allowances: number; payers: number; contractors: number; usdc_paid: number; decisions: number;
   by_action: Record<string, number>; human_agreed_pct: number | null; on_time_pct: number | null; usyc_swept: number;
@@ -30,7 +31,7 @@ export type Allowance = {
 };
 export type Milestone = {
   id: string; allowance_id: number; payee: string; title: string; amount: number; evidence_url: string; evidence_hash: string;
-  status: string; created_at: number; paid_tx?: string | null; paid_block?: number | null; last_error?: string | null;
+  status: string; created_at: number; paid_tx?: string | null; paid_block?: number | null; last_error?: string | null; payout_chain?: string | null;
 };
 export type TreasuryEvent = { id: number; action: string; assets: number; shares: number; tx: string; hash?: string; record_tx?: string | null; created_at: number };
 export type Treasury = {

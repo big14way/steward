@@ -9,7 +9,7 @@ const domain = { name: "STEWARD", version: "1", chainId: 5042002, verifyingContr
 const types = {
   Milestone: [
     { name: "allowanceId", type: "uint256" }, { name: "title", type: "string" }, { name: "amount", type: "uint128" },
-    { name: "evidenceHash", type: "bytes32" }, { name: "nonce", type: "string" },
+    { name: "evidenceHash", type: "bytes32" }, { name: "nonce", type: "string" }, { name: "payoutChain", type: "string" },
   ],
 } as const;
 
@@ -28,6 +28,7 @@ export default function Page() {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const [f, setF] = useState({ allowance_id: "0", title: "", amount: "", evidence_url: "" });
+  const [xchain, setXchain] = useState(false);
   const [out, setOut] = useState<unknown>(null);
   const [hist, setHist] = useState<Milestone[]>([]);
   const [busy, setBusy] = useState(false);
@@ -40,8 +41,9 @@ export default function Page() {
       const nonce = crypto.randomUUID();
       const amount = BigInt(Math.round(+f.amount * 1e6));
       const evidenceHash = (await sha256Hex(f.evidence_url)) as `0x${string}`;
-      const signature = await signTypedDataAsync({ domain, types, primaryType: "Milestone", message: { allowanceId: BigInt(f.allowance_id), title: f.title, amount, evidenceHash, nonce } });
-      const r = await post("/milestones", { allowance_id: +f.allowance_id, title: f.title, amount: Number(amount), evidence_url: f.evidence_url, nonce, signature });
+      const payoutChain = xchain ? "base-sepolia" : "arc";
+      const signature = await signTypedDataAsync({ domain, types, primaryType: "Milestone", message: { allowanceId: BigInt(f.allowance_id), title: f.title, amount, evidenceHash, nonce, payoutChain } });
+      const r = await post("/milestones", { allowance_id: +f.allowance_id, title: f.title, amount: Number(amount), evidence_url: f.evidence_url, nonce, signature, payout_chain: payoutChain });
       setOut(r.data); load(address);
     } catch (e) { setOut({ error: String(e) }); }
     setBusy(false);
@@ -73,9 +75,12 @@ export default function Page() {
         ))}
         <button disabled={busy || !f.title || !f.amount} onClick={submit} className="bg-zinc-100 text-zinc-900 disabled:opacity-50 rounded px-4 py-2">{busy ? "…" : "Sign & submit milestone"}</button>
         {out != null && <pre className="text-xs bg-zinc-900 p-3 rounded overflow-auto">{JSON.stringify(out, null, 2)}</pre>}
-        <div className="text-xs text-zinc-500 border border-zinc-800 rounded p-3">
-          <b>Receive on Base Sepolia</b> (CCTP V2) — coming Day 7. Payouts land on Arc for now; USDC on Arc is also your gas, so there is nothing to install.
-        </div>
+        <label className="flex items-start gap-2 text-xs text-zinc-400 border border-zinc-800 rounded p-3 cursor-pointer">
+          <input type="checkbox" className="mt-0.5" checked={xchain} onChange={(e) => setXchain(e.target.checked)} />
+          <span><b className="text-zinc-200">Receive on Base Sepolia</b> via CCTP V2. Signed into the milestone. The agent still screens and applies the caps, but
+            the payout itself is executed by the owner (burn on Arc → mint to your address on Base Sepolia) after a one-tap approval, because a
+            cross-chain transfer can't be enforced by the allowance contract. Leave unchecked to be paid on Arc, where USDC is also your gas.</span>
+        </label>
       </div>
       <div className="space-y-2">
         <h2 className="text-lg font-medium">Your milestones</h2>
@@ -84,7 +89,7 @@ export default function Page() {
           <div key={m.id} className="rounded border border-zinc-800 p-3 text-sm">
             <div className="flex flex-wrap gap-x-3"><span className="font-medium">{m.title}</span><span>{usd(m.amount)} USDC</span><span className={`font-mono ${STATUS[m.status] ?? ""}`}>{m.status}</span><span className="text-zinc-500 ml-auto">{when(m.created_at)}</span></div>
             <div className="text-xs text-zinc-500 mt-1 break-all">
-              #{m.allowance_id} · {m.evidence_url ? <a className="underline" href={m.evidence_url} target="_blank">evidence</a> : "no evidence"}
+              #{m.allowance_id} · {m.payout_chain && m.payout_chain !== "arc" ? `payout on ${m.payout_chain}` : "payout on Arc"} · {m.evidence_url ? <a className="underline" href={m.evidence_url} target="_blank">evidence</a> : "no evidence"}
               {m.paid_tx && <> · <a className="underline" href={tx(m.paid_tx)} target="_blank">paid tx</a></>}
               {m.last_error && <> · <span className="text-red-300">{m.last_error}</span></>}
             </div>

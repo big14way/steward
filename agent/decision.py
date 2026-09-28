@@ -30,6 +30,7 @@ class DecisionInput:
     evidence_present: bool
     evidence_hash: str
     block_number: int
+    payout_chain: str = "arc"   # "arc" | "base-sepolia" (CCTP V2 payout, owner-executed)
 
 
 @dataclass
@@ -95,6 +96,11 @@ def llm_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder:
 
 def decide(i: DecisionInput, use_llm: bool = True) -> Decision:
     rule, action, amount, remainder = apply_rules(i)
+    if i.payout_chain != "arc" and action in ("PAY", "PARTIAL"):
+        # A cross-chain payout (CCTP V2 burn on Arc → mint on Base Sepolia) bypasses AllowanceManager caps, so it is
+        # never executed by the agent: the rules still run (screen, evidence, caps), and an in-policy result becomes an
+        # owner-executed escalation. The owner's approval runs the burn/mint from the owner wallet (api/cctp.py).
+        rule, action, amount, remainder = rule + "_xchain", "ESCALATE", 0, i.requested
     llm = llm_reason(i, rule, action, amount, remainder) if use_llm else None
     if llm:
         return Decision(i, rule, action, amount, remainder, llm["reason"], llm["timing"], "llm")

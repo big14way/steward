@@ -39,6 +39,7 @@ def _decide_one(m: dict):
         payee_streak=db.streak(a["payee"]), payee_late=db.late(a["payee"]),
         payee_screen=screen.screen(a["payee"]), evidence_present=bool(m.get("evidence_url")),
         evidence_hash=m.get("evidence_hash", ""), block_number=chain.w3.eth.block_number,
+        payout_chain=m.get("payout_chain") or "arc",
     )
     d = decide(i, use_llm=LLM != "none")
     dh = decision_hash(d)
