@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+circle-developer-controlled-wallets
+circle-smart-contract-platform
+python-dotenv
+web3>=7.0
+eth-account>=0.13
+httpx
+pydantic>=2

@@ -1,0 +1,34 @@
+# build spec is private — never commit
+steward_tameion_build_spec.md
+*.build_spec.md
+
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+*.sqlite
+
+# node
+node_modules/
+.next/
+dist/
+.turbo/
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
