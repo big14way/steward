@@ -1,0 +1,22 @@
+{
+  "name": "steward-sdk",
+  "version": "0.1.0",
+  "description": "Per-payee on-chain allowances, a replayable decision log and human escalation for AI agents that pay people in USDC on Arc.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/big14way/steward.git", "directory": "packages/steward-sdk" },
+  "homepage": "https://github.com/big14way/steward#readme",
+  "keywords": ["arc", "circle", "usdc", "agent", "allowance", "tameion", "viem"],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "require": "./dist/index.cjs" } },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "test": "node --test test/",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": { "viem": ">=2" },
+  "devDependencies": { "tsup": "^8", "typescript": "^5", "viem": "^2" }
+}

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "steward-sdk"
+version = "0.1.0"
+description = "Per-payee on-chain allowances, a replayable decision log and human escalation for AI agents that pay people in USDC on Arc."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["web3>=7", "eth-account>=0.13", "eth-utils>=4"]
+keywords = ["arc", "circle", "usdc", "agent", "allowance", "tameion"]
+
+[project.urls]
+Homepage = "https://github.com/big14way/steward"
+Repository = "https://github.com/big14way/steward"
+
+[tool.hatch.build.targets.wheel]
+packages = ["steward_sdk"]
