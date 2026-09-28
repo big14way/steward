@@ -111,6 +111,11 @@ cd agent && cp .env.example .env && uv venv --python 3.11 .venv && uv pip instal
 python api/scripts/submit_milestone.py --allowance 0 --title "logo v2" --amount 150 --evidence https://… --key <payee key> --am <AllowanceManager>
 ```
 
+```bash
+# dashboard (Next.js) — reads the API; contractor page signs EIP-712 with an injected wallet on Arc Testnet
+cd web && cp .env.example .env.local && npm install && npm run dev      # http://localhost:3000
+```
+
 **Signers.** Owner and agent writes go through Circle Developer-Controlled Wallets (`OWNER_SIGNER=circle`, `SIGNER=circle`) so no key lives on the server. A local-key path (`…=local`) exists for the arc-anvil walkthrough and as a documented fallback; `GET /health` reports which one is active.
 
 ## Roadmap
