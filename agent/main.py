@@ -88,6 +88,7 @@ async def loop_treasury():
 
 async def main():
     log.info("agent %s signer=%s rpc=%s api=%s llm=%s", chain.agent_address(), chain.SIGNER, chain.RPC, API_BASE, LLM)
+    await notify.start()   # Telegram approve/reject buttons (no-op without a token)
     await asyncio.gather(loop_signals(), loop_decide(), loop_treasury())
 
 
