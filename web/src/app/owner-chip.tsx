@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getOwnerSecret, setOwnerSecret } from "@/lib/api";
+import { KeyRound, LogOut } from "lucide-react";
+import { getOwnerSecret, setOwnerSecret, JUDGE_SECRET } from "@/lib/api";
+import { Button, Modal, inputCls } from "./ui";
 
 /** One-time owner sign-in for this browser. The secret is only ever sent to the API with owner actions. */
 export default function OwnerChip() {
@@ -8,32 +10,32 @@ export default function OwnerChip() {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   useEffect(() => { setSecret(getOwnerSecret()); }, []);
-  const save = () => { setOwnerSecret(draft.trim()); setSecret(draft.trim()); setDraft(""); setOpen(false); window.dispatchEvent(new Event("steward:owner")); };
-  const clear = () => { setOwnerSecret(""); setSecret(""); setOpen(false); window.dispatchEvent(new Event("steward:owner")); };
+  const save = (v: string) => { setOwnerSecret(v.trim()); setSecret(v.trim()); setDraft(""); setOpen(false); window.dispatchEvent(new Event("steward:owner")); };
+  const clear = () => save("");
   return (
-    <div className="relative ml-auto">
+    <div className="ml-auto pl-2 shrink-0">
       {secret ? (
-        <button onClick={() => setOpen(!open)} className="text-xs rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200 px-3 py-1">Owner · signed in</button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)} className="border border-emerald-500/40 text-emerald-200"><KeyRound className="h-3.5 w-3.5" />Owner</Button>
       ) : (
-        <button onClick={() => setOpen(!open)} className="text-xs rounded-full border border-zinc-700 text-zinc-300 px-3 py-1 hover:border-zinc-500">Owner sign-in</button>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}><KeyRound className="h-3.5 w-3.5" />Sign in</Button>
       )}
-      {open && (
-        <div className="absolute right-0 mt-2 w-80 rounded-lg border border-zinc-800 bg-zinc-950 p-3 shadow-xl z-20 space-y-2">
-          {secret ? (
-            <>
-              <div className="text-xs text-zinc-400">This browser can add contractors, top up budgets, and approve requests.</div>
-              <button onClick={clear} className="text-xs rounded bg-zinc-800 px-3 py-1">Sign out</button>
-            </>
-          ) : (
-            <>
-              <div className="text-xs text-zinc-400">Paste the owner secret (from the API's <code>API_SECRET</code>). Judges: the banner secret works for approvals only.</div>
-              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()} placeholder="owner secret"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-sm" />
-              <button onClick={save} disabled={!draft.trim()} className="text-xs rounded bg-zinc-100 text-zinc-900 disabled:opacity-50 px-3 py-1">Sign in</button>
-            </>
-          )}
-        </div>
-      )}
+      <Modal open={open} onClose={() => setOpen(false)} title={secret ? "Owner session" : "Owner sign-in"}>
+        {secret ? (
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">This browser can add contractors, top up budgets, move reserve funds, and approve requests. The secret stays on this device.</p>
+            <Button variant="secondary" onClick={clear}><LogOut className="h-4 w-4" />Sign out</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">Paste the owner secret (the API's <code>API_SECRET</code>). It is stored in this browser only and sent with owner actions.</p>
+            <input autoFocus className={inputCls} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && draft.trim() && save(draft)} placeholder="owner secret" type="password" />
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => save(draft)} disabled={!draft.trim()}>Sign in</Button>
+              {JUDGE_SECRET && <Button variant="secondary" onClick={() => save(JUDGE_SECRET)}>Continue as judge (approvals only)</Button>}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

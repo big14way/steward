@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import Chrome from "./chrome";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
   title: "STEWARD — let your agent pay people, within limits you set",
@@ -10,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-zinc-950 text-zinc-100 min-h-screen antialiased">
+    <html lang="en" className={inter.variable}>
+      <body className="bg-zinc-950 text-zinc-100 min-h-screen antialiased" style={{ fontFamily: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" }}>
         <Providers>
           <Chrome />
           <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">{children}</main>

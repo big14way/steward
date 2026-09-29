@@ -1,26 +1,24 @@
 @import "tailwindcss";
 
+/* STEWARD is dark-only. These rules are unlayered on purpose so they win regardless of the OS color scheme:
+   the create-next-app defaults switched the body to white in light mode and overrode the Tailwind utilities. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --background: #09090b;   /* zinc-950 */
+  --foreground: #f4f4f5;   /* zinc-100 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html { background: var(--background); }
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
+input, select, textarea { color-scheme: dark; }

@@ -106,3 +106,7 @@ export type Contractor = {
   create_tx?: string; fund_tx?: string; circle_wallet_created?: boolean;
 };
 export type Portal = Contractor & { requests_list: Milestone[]; explorer: string };
+export type Account = {
+  owner: string; owner_usdc: number; agent: string | null; agent_usdc: number | null; in_budgets: number; in_reserve: number | null;
+  budgets: number; payer: string; faucet: string; explorer: string;
+};

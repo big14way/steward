@@ -68,6 +68,25 @@ def _allowance(id: int) -> dict:
     return dict(zip(KEYS, AM.functions.allowances(id).call()))
 
 
+@app.get("/account")
+def account():
+    """Owner account card: USDC balances of the owner wallet, the agent wallet (gas), and what is locked in budgets + reserve."""
+    usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+    owner = signer.owner_address()
+    agent = os.environ.get("AGENT_ADDRESS")
+    n = AM.functions.nextId().call()
+    funded = sum(_allowance(i)["funded"] for i in range(n))
+    reserve = None
+    if os.environ.get("YIELD_SWEEPER"):
+        try:
+            reserve = usdc.functions.balanceOf(Web3.to_checksum_address(os.environ["YIELD_SWEEPER"])).call()
+        except Exception:
+            reserve = None
+    return {"owner": owner, "owner_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(owner)).call(),
+            "agent": agent, "agent_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(agent)).call() if agent else None,
+            "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": PAYER_NAME, "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "chain_id": CHAIN_ID, "block": w3.eth.block_number, "allowance_manager": AM_ADDR,

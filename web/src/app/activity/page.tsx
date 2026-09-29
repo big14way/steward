@@ -1,6 +1,9 @@
-import { get, usd, tx, when, ruleText, ACTION_TEXT, ACTION_COLOR, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
+import { ArrowUpRight } from "lucide-react";
+import { get, usd, tx, when, ruleText, ACTION_TEXT, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
+import { Card, PageHeader, Pill } from "../ui";
 
 export const dynamic = "force-dynamic";
+const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sky"> = { PAY: "emerald", PARTIAL: "amber", HOLD: "zinc", ESCALATE: "orange", SCREEN_FAIL: "red" };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ action?: string; allowance?: string }> }) {
   const { action, allowance } = await searchParams;
@@ -9,45 +12,49 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
   if (allowance) q.set("allowance_id", allowance);
   const d = await get<Decision[]>(`/decisions?${q}`).catch(() => [] as Decision[]);
   const actions = ["", "PAY", "PARTIAL", "HOLD", "ESCALATE", "SCREEN_FAIL"];
+  const href = (a: string) => `/activity${a ? `?action=${a}` : ""}${allowance ? `${a ? "&" : "?"}allowance=${allowance}` : ""}`;
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Activity · audit log</h1>
-      <p className="text-sm text-zinc-400 max-w-3xl">
-        One row per agent decision{allowance ? ` for budget #${allowance}` : ""}. The hash is keccak256 of the canonical record (what the agent saw, which rule fired, the amount, the reason) and is exactly what
-        was written to <code>AuditLog</code> and passed to <code>pay()</code>. Open a row to see the record and replay it.
-      </p>
-      <div className="flex flex-wrap gap-2 text-sm">
+    <div>
+      <PageHeader title="Activity" description={<>One row per agent decision{allowance ? ` for budget #${allowance}` : ""}. The hash is keccak256 of the canonical record (what the agent saw, which rule fired, the amount, the reason) and is exactly what was written to <code>AuditLog</code> and passed to <code>pay()</code>. Open a row to replay it.</>} />
+      <div className="flex flex-wrap gap-1 mb-4 text-sm">
         {actions.map((a) => (
-          <a key={a} href={`/activity${a ? `?action=${a}` : ""}${allowance ? `${a ? "&" : "?"}allowance=${allowance}` : ""}`} className={`px-2 py-1 rounded border ${a === (action ?? "") ? "border-zinc-300" : "border-zinc-800"}`}>{a ? ACTION_TEXT[a] : "All"}</a>
+          <a key={a} href={href(a)} className={`rounded-md px-2.5 py-1.5 ${a === (action ?? "") ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"}`}>{a ? ACTION_TEXT[a] : "All"}</a>
         ))}
       </div>
-      {d.length === 0 && <div className="text-zinc-500 text-sm">Nothing here yet.</div>}
-      {d.map((x) => (
-        <details key={x.hash} className="rounded-lg border border-zinc-800 p-3">
-          <summary className="cursor-pointer flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className={`rounded-full border px-2 py-0.5 text-xs ${ACTION_COLOR[x.action] ?? ""}`}>{ACTION_TEXT[x.action] ?? x.action}</span>
-            <span className="font-medium">{usd(x.amount)} USDC{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {usd(x.remainder)} escalated</span>}</span>
-            <span className="text-zinc-400">#{x.allowance_id} · {ruleText(x.rule)}</span>
-            <span className="text-zinc-500">{x.source === "llm" ? "reason by LLM" : "reason by rules"}{x.timing && x.timing !== "now" ? ` · ${x.timing}` : ""}</span>
-            <span className="text-zinc-500 ml-auto whitespace-nowrap">{when(x.created_at)}</span>
-            <span className="basis-full text-zinc-300">{x.reason}</span>
-          </summary>
-          <div className="mt-3 text-xs space-y-1 font-mono break-all">
-            <div>hash {x.hash}</div>
-            {x.escalation_hash && x.escalation_hash !== x.hash && <div>remainder hash {x.escalation_hash}</div>}
-            {x.record_tx && <div>record <a className="underline" href={tx(x.record_tx)} target="_blank">{x.record_tx}</a></div>}
-            {x.pay_tx && <div>pay <a className="underline" href={tx(x.pay_tx)} target="_blank">{x.pay_tx}</a></div>}
-            {x.escalate_tx && <div>escalate <a className="underline" href={tx(x.escalate_tx)} target="_blank">{x.escalate_tx}</a></div>}
-            {x.approved_tx && <div>{x.mint_tx ? "burn (Arc)" : "approved"} <a className="underline" href={tx(x.approved_tx)} target="_blank">{x.approved_tx}</a></div>}
-            {x.mint_tx && <div>mint (Base Sepolia) <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${x.mint_tx}`} target="_blank">{x.mint_tx}</a></div>}
-            {x.human_agreed != null && <div>owner {x.human_agreed ? "approved" : "declined"}</div>}
-            {x.canonical && (
-              <details className="mt-2"><summary className="cursor-pointer text-zinc-400">canonical record (keccak256 of this text = hash)</summary>
-                <pre className="mt-1 whitespace-pre-wrap text-[11px] text-zinc-300">{x.canonical}</pre></details>
-            )}
-          </div>
-        </details>
-      ))}
+      <Card className="divide-y divide-zinc-800">
+        <div className="hidden md:grid grid-cols-[150px_1fr_130px_1fr_140px_60px] gap-3 px-4 py-2 text-xs text-zinc-500">
+          <div>Decision</div><div>Rule</div><div className="text-right">Amount</div><div>Reason</div><div className="text-right">When</div><div />
+        </div>
+        {d.length === 0 && <div className="p-6 text-zinc-500 text-sm">Nothing here yet.</div>}
+        {d.map((x) => (
+          <details key={x.hash} className="group">
+            <summary className="cursor-pointer list-none grid md:grid-cols-[150px_1fr_130px_1fr_140px_60px] gap-x-3 gap-y-1 px-4 py-3 text-sm items-center hover:bg-zinc-900/60">
+              <div><Pill tone={TONE[x.action] ?? "zinc"}>{ACTION_TEXT[x.action] ?? x.action}</Pill></div>
+              <div className="text-zinc-300">#{x.allowance_id} · {ruleText(x.rule)}</div>
+              <div className="md:text-right tabular-nums font-medium">{usd(x.amount)}{x.remainder > 0 && <span className="text-zinc-500 font-normal"> +{usd(x.remainder)} esc.</span>}</div>
+              <div className="text-zinc-400 truncate" title={x.reason}>{x.reason}</div>
+              <div className="md:text-right text-zinc-500 whitespace-nowrap">{when(x.created_at)}</div>
+              <div className="md:text-right"><a className="text-zinc-400 hover:text-white inline-flex" href={tx(x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx)} target="_blank"><ArrowUpRight className="h-4 w-4" /></a></div>
+            </summary>
+            <div className="px-4 pb-4 text-xs space-y-1 font-mono break-all bg-zinc-950/60">
+              <div className="text-zinc-300 font-sans text-sm mb-2">{x.reason}</div>
+              <div>hash {x.hash}</div>
+              {x.escalation_hash && x.escalation_hash !== x.hash && <div>remainder hash {x.escalation_hash}</div>}
+              {x.record_tx && <div>record <a className="underline" href={tx(x.record_tx)} target="_blank">{x.record_tx}</a></div>}
+              {x.pay_tx && <div>pay <a className="underline" href={tx(x.pay_tx)} target="_blank">{x.pay_tx}</a></div>}
+              {x.escalate_tx && <div>escalate <a className="underline" href={tx(x.escalate_tx)} target="_blank">{x.escalate_tx}</a></div>}
+              {x.approved_tx && <div>{x.mint_tx ? "burn (Arc)" : "approved"} <a className="underline" href={tx(x.approved_tx)} target="_blank">{x.approved_tx}</a></div>}
+              {x.mint_tx && <div>mint (Base Sepolia) <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${x.mint_tx}`} target="_blank">{x.mint_tx}</a></div>}
+              {x.human_agreed != null && <div>owner {x.human_agreed ? "approved" : "declined"}</div>}
+              <div>reason by {x.source === "llm" ? "LLM" : "rules"}{x.timing && x.timing !== "now" ? ` · ${x.timing}` : ""}</div>
+              {x.canonical && (
+                <details className="mt-2"><summary className="cursor-pointer text-zinc-400">canonical record (keccak256 of this text = hash)</summary>
+                  <pre className="mt-1 whitespace-pre-wrap text-[11px] text-zinc-300">{x.canonical}</pre></details>
+              )}
+            </div>
+          </details>
+        ))}
+      </Card>
     </div>
   );
 }
