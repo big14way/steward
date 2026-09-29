@@ -1,6 +1,8 @@
 # STEWARD — on-chain allowances + decision log + escalation for AI agents that pay people on Arc
 
 > Tameion Agents Hackathon (Canteen × Circle × Arc) · RFB 03 / 04 / 01 · Sep 27 – Oct 10, 2026
+>
+> **Live:** dashboard [steward-arc.vercel.app](https://steward-arc.vercel.app) (judge mode on) · API [api-production-c6a14.up.railway.app](https://api-production-c6a14.up.railway.app/health) · agent on Railway, signing through Circle wallets · Arc RPC via the Canteen node
 
 Businesses are letting AI agents pay contractors and vendors, but the agent either holds a hot key or asks permission for everything. STEWARD gives an agent a **per-payee allowance enforced by a contract on Arc** (cap per period, cap per transaction, expiry, owner revocation), a **decision log** where every payment carries the inputs it saw, the rule it applied and the reason it wrote, hashed on-chain so an auditor can replay it, and **one-tap human escalation** only when policy is hit.
 

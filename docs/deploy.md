@@ -4,7 +4,7 @@
 |---|---|---|
 | API (FastAPI) | Railway service `api`, project `steward` | `Dockerfile.api`, volume mounted at `/data` (`DB_PATH=/data/steward.db`), public domain `https://api-production-c6a14.up.railway.app` |
 | Agent | Railway service `agent` | `Dockerfile.agent` (ships `contracts/abi` + `api/circle_client.py`), `SIGNER=circle`, `API_BASE` = the API's public domain |
-| Dashboard (Next.js) | Vercel project `steward` | `NEXT_PUBLIC_API=/api`, `API_INTERNAL=<railway api domain>` (the `/api/*` rewrite in `next.config.ts`), judge vars |
+| Dashboard (Next.js) | Vercel project `steward` → https://steward-arc.vercel.app (alias; `steward.vercel.app` was taken) | root directory `web`, `NEXT_PUBLIC_API=/api`, `API_INTERNAL=<railway api domain>` (the `/api/*` rewrite in `next.config.ts`), judge vars; Deployment Protection set to *preview only* via `PATCH /v9/projects/{id}` so `*.vercel.app` production URLs are public; GitHub repo linked, pushes to `main` deploy `web/` |
 | Contracts | Arc Testnet | see README table |
 
 Both Railway Dockerfiles use the repo root as build context. `railway up` uploads the working tree minus `.gitignore` (so no `.env` files
@@ -20,7 +20,7 @@ directive — attach a Railway volume instead (`railway service api && railway v
 
 - `PUBLIC_WEB` (API): the dashboard's public URL, used to build contractor invite links.
 - `API_BASE` (agent): the API's public URL (or Railway private domain).
-- `ARC_RPC` (API + agent): the Canteen-issued RPC URL from `arc-canteen rpc-url` once logged in; the public `https://rpc.testnet.arc.io` otherwise.
+- `ARC_RPC` (API + agent): the Canteen-issued RPC URL (`~/.arc-canteen/env`, set Sep 29 on Railway and locally); the public `https://rpc.testnet.arc.io` is the fallback.
   The browser (`NEXT_PUBLIC_ARC_RPC`) keeps the public RPC so the per-builder key is never shipped in the client bundle.
 
 ## Gotchas
