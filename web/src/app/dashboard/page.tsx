@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Users, Inbox, ScrollText, Wallet, Coins, CheckCheck, Timer, PiggyBank, Gauge } from "lucide-react";
 import { get, usd, tx, ago, short, ruleText, ACTION_TEXT, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
-import { Card, Pill, Stat } from "./ui";
+import { Card, Pill, Stat } from "../ui";
 
 export const dynamic = "force-dynamic";
 

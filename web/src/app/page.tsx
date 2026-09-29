@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, ScrollText, Inbox, Wallet, Link2, Code2, CheckCircle2, ArrowUpRight, Github } from "lucide-react";
+import { ArrowRight, ShieldCheck, ScrollText, Inbox, Wallet, Link2, Code2, CheckCircle2, ArrowUpRight, ExternalLink } from "lucide-react";
 import { get, type Stats } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export default async function Landing() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400">Open the dashboard<ArrowRight className="h-4 w-4" /></Link>
-          <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><Github className="h-4 w-4" />Source & contracts</a>
+          <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><ExternalLink className="h-4 w-4" />Source & contracts</a>
         </div>
       </section>
 

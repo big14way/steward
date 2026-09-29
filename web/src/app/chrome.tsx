@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Inbox, ScrollText, Landmark, Code2, ShieldCheck, Github, X } from "lucide-react";
+import { LayoutDashboard, Users, Inbox, ScrollText, Landmark, Code2, ShieldCheck, ExternalLink, X } from "lucide-react";
 import OwnerChip, { useOwnerSecret } from "./owner-chip";
 
 const nav = [
@@ -34,7 +34,7 @@ export default function Chrome() {
         <div className="max-w-6xl mx-auto flex items-center gap-4 px-4 sm:px-6 py-3 text-sm">
           <Link href="/" className="flex items-center gap-1.5 font-semibold tracking-tight text-base"><ShieldCheck className="h-5 w-5 text-emerald-400" />STEWARD</Link>
           <Link href="/sdk" className="text-zinc-400 hover:text-white hidden sm:inline">SDK</Link>
-          <a href="https://github.com/big14way/steward" target="_blank" className="text-zinc-400 hover:text-white hidden sm:inline-flex items-center gap-1"><Github className="h-4 w-4" />GitHub</a>
+          <a href="https://github.com/big14way/steward" target="_blank" className="text-zinc-400 hover:text-white hidden sm:inline-flex items-center gap-1"><ExternalLink className="h-4 w-4" />GitHub</a>
           <Link href="/dashboard" className="ml-auto inline-flex items-center rounded-md bg-emerald-500 text-zinc-950 px-3 py-1.5 font-medium hover:bg-emerald-400">Open the dashboard</Link>
         </div>
       </nav>
