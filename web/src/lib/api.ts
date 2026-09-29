@@ -1,4 +1,7 @@
-const API = process.env.NEXT_PUBLIC_API ?? "http://127.0.0.1:8001";
+// Browser code uses the public API URL; server components can use API_INTERNAL (e.g. http://127.0.0.1:8001) when the API runs
+// next to the Next.js server, which avoids a round trip through the public hostname (and any DNS/tunnel quirks).
+const PUBLIC_API = process.env.NEXT_PUBLIC_API ?? "http://127.0.0.1:8001";
+const API = typeof window === "undefined" ? (process.env.API_INTERNAL ?? PUBLIC_API) : PUBLIC_API;
 export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://explorer.testnet.arc.io";
 
 export const get = <T,>(p: string) =>
