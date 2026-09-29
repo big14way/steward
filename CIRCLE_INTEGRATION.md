@@ -5,8 +5,8 @@ awaiting the builder's Circle credentials to run against Circle's APIs.
 
 | Circle tool | Where in code | Network | Status / evidence |
 |---|---|---|---|
-| Developer-Controlled Wallets | `api/scripts/create_wallets.py` (owner, agent, contractor, judge) · `api/circle_client.py` (`createContractExecutionTransaction` for every owner/agent write) · `agent/chain.py` `SIGNER=circle` · `api/signer.py` `OWNER_SIGNER=circle` | ARC-TESTNET | code ready — wallet ids: _pending `CIRCLE_API_KEY` + `CIRCLE_ENTITY_SECRET`_ |
-| Circle Contracts | deploy with Foundry (`contracts/script/Deploy.s.sol`), then `importContract` so AllowanceManager + AuditLog appear under Circle Contracts and can drive event monitors; bytecode deploy on Arc Testnet is also supported per docs | ARC-TESTNET | verified in docs (Day 1) — contract ids: _pending deploy_ |
+| Developer-Controlled Wallets | `api/scripts/create_wallets.py` (owner, agent, contractor, judge) · `api/circle_client.py` (`createContractExecutionTransaction` for every owner/agent write) · `agent/chain.py` `SIGNER=circle` · `api/signer.py` `OWNER_SIGNER=circle` | ARC-TESTNET | **live** — wallet set `c8ec70d1-3075-50dc-9064-0aba217752d0`; owner `0x7bc7…5c2f` (id `05792baa-…`), agent `0x380a…8a47` (id `fe4c7642-…`), contractor `0xf863…610c`, judge `0x32b6…ffe0`; entity secret registered Sep 29, 2026 |
+| Circle Contracts | deploy with Foundry (`contracts/script/Deploy.s.sol`), then `importContract` so AllowanceManager + AuditLog appear under Circle Contracts and can drive event monitors; bytecode deploy on Arc Testnet is also supported per docs | ARC-TESTNET | deployed via Foundry Sep 29 — AllowanceManager `0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6`, AuditLog `0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866`, YieldSweeper `0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5`, MockUSYC `0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D`; **imported into Circle Contracts** (ARC-TESTNET, status COMPLETE): AllowanceManager `01a0ea95-2056-727f-9125-1231a8a3bacf`, AuditLog `01a0ea95-8400-7181-9a31-0c08feee2d9a`, YieldSweeper `01a0ea95-8788-7d0a-8aa0-5f7876c1ab5d`, MockUSYC `01a0ea95-8d03-7681-94ba-b2bb7bfa5ea6`; source verified on explorer.testnet.arc.io for AllowanceManager, AuditLog, MockUSYC (Blockscout, solc 0.8.24); YieldSweeper verification retrying past the explorer rate limit |
 | USDC (ERC-20, 6 dp) | `AllowanceManager` — every amount is `uint128` in 6-dp USDC; `fund` → `transferFrom`, `pay`/`approveAndPay`/`revoke` → `transfer` | ARC-TESTNET | local `Paid` txs on arc-anvil; fork test on real USDC passes — testnet `Paid` tx: _pending_ |
 | USYC / MockUSYC | `YieldSweeper.sweep` / `redeem` against an ERC-4626 vault; `MockUSYC` until the Teller allowlist lands (disclosed) | ARC-TESTNET | local SWEEP 760 / REDEEM 600 on arc-anvil — testnet tx + ticket #: _pending_ |
 | CCTP V2 | `api/cctp.py` — owner wallet `depositForBurn` on Arc (domain 26) → attestation → `receiveMessage` on Base Sepolia (domain 6); triggered by an approved `_xchain` escalation | ARC-TESTNET → BASE-SEPOLIA | addresses/domains verified in docs; burn / mint tx: _pending relayer wallet_ |
@@ -28,6 +28,15 @@ awaiting the builder's Circle credentials to run against Circle's APIs.
   your own application logic before calling Circle APIs."*
 - SDK versions at time of writing: `circle-developer-controlled-wallets` 9.6.0 / `circle-smart-contract-platform` 9.6.0 (PyPI);
   `@circle-fin/developer-controlled-wallets` 10.8.1 / `@circle-fin/smart-contract-platform` 10.8.1 (npm); Circle CLI 1.1.4.
+
+## Sep 29, 2026 — testnet go-live log
+
+- Deployer `0x526dd81859c728963f1a6007110f24014F520FE2` (Foundry, 25 gwei, ~0.09 USDC gas for all four contracts).
+- Deploy txs: AllowanceManager `0xf3dab095…15cd`, AuditLog `0x81a8c25f…847e`, MockUSYC `0xbfae91f9…1ee8`, YieldSweeper `0x2159648…71f3`.
+- Entity secret registered via the Python SDK (`register_entity_secret_ciphertext`); recovery file kept off-repo.
+- Wallet set `c8ec70d1-3075-50dc-9064-0aba217752d0`, four EOA wallets on ARC-TESTNET (owner / agent / contractor / judge), all `LIVE`.
+- `importContract` gotcha: the request 400s when a `description` is included; `name` + `address` + `blockchain` + `idempotencyKey` works.
+- Blockscout verify gotcha: the public explorer rate-limits `getabi`; use `forge verify-contract --skip-is-verified-check`.
 
 ## Verified on Day 7 (CCTP V2, from the Circle docs mirror)
 

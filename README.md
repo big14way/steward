@@ -46,6 +46,17 @@ Contractor UI ── milestone + EIP-712 sig ──▶ FastAPI ──┘        
 
 **Stack:** Solidity 0.8.24 + Foundry (+ [arc-foundry](https://github.com/circlefin/arc-foundry) for Arc semantics) · Python 3.11 agent (web3.py) · FastAPI + SQLite · Next.js + Tailwind · Circle Developer-Controlled Wallets + Circle Contracts.
 
+## Deployed on Arc Testnet (Sep 29, 2026)
+
+| Contract | Address | Deploy tx |
+|---|---|---|
+| AllowanceManager | [`0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6`](https://explorer.testnet.arc.io/address/0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6) | [0xf3dab09563…](https://explorer.testnet.arc.io/tx/0xf3dab095635acdc653bcea683d434139179bbfad863bd975186a95df42cb15cd) |
+| AuditLog | [`0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866`](https://explorer.testnet.arc.io/address/0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866) | [0x81a8c25ffb…](https://explorer.testnet.arc.io/tx/0x81a8c25ffb38f83151044211a756051d1a919e7a1357aeb74ba16531c8af847e) |
+| MockUSYC (ERC-4626 stand-in, disclosed) | [`0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D`](https://explorer.testnet.arc.io/address/0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D) | [0xbfae91f973…](https://explorer.testnet.arc.io/tx/0xbfae91f9732950feaf3ea6b8e40ed3a023801e30656a7e56e0d2a0e00d011ee8) |
+| YieldSweeper (floor 100 USDC) | [`0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5`](https://explorer.testnet.arc.io/address/0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5) | [0x2159648069…](https://explorer.testnet.arc.io/tx/0x2159648069a0a43ab11bf29dc23db63d58ee47151c28ecd9c73c5b8236e171f3) |
+
+Wallets are Circle Developer-Controlled Wallets on ARC-TESTNET: owner `0x7bc79b07faa88299667ce65283129b314cb15c2f`, agent `0x380a28198b0759ca4b67d5b03ffb5f68a77c8a47`, contractor `0xf8630fe8087c26cd397221ea61e652074797610c`, judge `0x32b6dceb157db35dd60f56678e0618739f25ffe0`.
+
 ## Circle tools
 
 See [`CIRCLE_INTEGRATION.md`](CIRCLE_INTEGRATION.md) for the per-tool table with tx hashes (filled in as each lands).
