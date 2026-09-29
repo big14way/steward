@@ -30,8 +30,28 @@ contract YieldSweeperTest is Test {
     function setUp() public {
         usdc = new MockUSDC2();
         vault = new MockUSYC(IERC20(address(usdc)));
-        sw = new YieldSweeper(address(usdc), address(vault), agent, FLOOR);
+        sw = new YieldSweeper(address(usdc), address(vault), owner, agent, FLOOR);
         usdc.mint(address(sw), 1_000 * ONE);
+    }
+
+    function test_constructor_ownerIsParameterNotDeployer() public {
+        address circleOwner = makeAddr("circle-owner");
+        YieldSweeper s2 = new YieldSweeper(address(usdc), address(vault), circleOwner, agent, FLOOR);
+        assertEq(s2.owner(), circleOwner);
+        vm.expectRevert(YieldSweeper.NotOwner.selector); s2.setFloor(1);          // deployer (this) is not the owner
+        vm.prank(circleOwner); s2.setFloor(5 * ONE); assertEq(s2.reserveFloor(), 5 * ONE);
+    }
+
+    function test_setAgent_and_transferOwnership_onlyOwner() public {
+        address agent2 = makeAddr("agent2");
+        vm.prank(rando); vm.expectRevert(YieldSweeper.NotOwner.selector); sw.setAgent(agent2);
+        sw.setAgent(agent2); assertEq(sw.agent(), agent2);
+        vm.prank(agent); vm.expectRevert(YieldSweeper.NotAgentOrOwner.selector); sw.sweep(0);   // old agent locked out
+        vm.prank(agent2); sw.sweep(0);
+        address owner2 = makeAddr("owner2");
+        vm.prank(rando); vm.expectRevert(YieldSweeper.NotOwner.selector); sw.transferOwnership(owner2);
+        sw.transferOwnership(owner2); assertEq(sw.owner(), owner2);
+        vm.expectRevert(YieldSweeper.NotOwner.selector); sw.setFloor(1);
     }
 
     function test_constructor_setsRolesAndApproval() public view {

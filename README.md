@@ -4,13 +4,13 @@
 
 Businesses are letting AI agents pay contractors and vendors, but the agent either holds a hot key or asks permission for everything. STEWARD gives an agent a **per-payee allowance enforced by a contract on Arc** (cap per period, cap per transaction, expiry, owner revocation), a **decision log** where every payment carries the inputs it saw, the rule it applied and the reason it wrote, hashed on-chain so an auditor can replay it, and **one-tap human escalation** only when policy is hit.
 
-## 📊 Live stats — Arc Testnet (updated Sep 28)
+## 📊 Live stats — Arc Testnet (updated Sep 29)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
-| 0 | 0 | 0 | 0.00 | 0 | 0/0/0/0/0 | — | — | 0.00 | 0 |
+| 2 | 1 | 1 | 2.30 | 2 | 1/0/0/1/0 | 100% | 100% | 2.00 | 0 |
 
-_Days 1–9 code: contracts (44 tests) · API · agent (decide + treasury loops, 20 tests) · dashboard · CCTP payout path · adversarial demo · TS + Python SDK — all proven end to end on a local Arc node and a live testnet fork ([day 1](docs/day1-checks.md) · [2](docs/day2-local-e2e.md) · [6](docs/day6-treasury.md) · [7](docs/day7-crosschain-judge.md) · [8](docs/day8-adversarial.md) · [9](docs/day9-sdk.md)). Testnet numbers appear here once the Circle wallets are funded and the contracts are deployed; the table is a copy of `GET /stats`._
+_Live since Sep 29, 2026 through Circle Developer-Controlled wallets: first `AuditLog.record()` + `pay()` from the agent wallet ([record](https://explorer.testnet.arc.io/tx/0x04a63c281b7c6d90bca2b7f3ac3322d24acf97cbfb9bc89a8fc9a4f6640f01fb), [pay 0.80 USDC](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61)), first `approveAndPay()` from the owner wallet ([1.50 USDC](https://explorer.testnet.arc.io/tx/0x71808a88a31abc7da50d61d90af18dcd67ff1525857e862507f7e4c1579e5791)). Faucet-sized budgets for now (allowance #0 = judge demo, #1 = the freelancer). The table is a copy of `GET /stats`; per-day notes: [day 1](docs/day1-checks.md) · [2](docs/day2-local-e2e.md) · [6](docs/day6-treasury.md) · [7](docs/day7-crosschain-judge.md) · [8](docs/day8-adversarial.md) · [9](docs/day9-sdk.md) · [go-live](docs/testnet-go-live.md)._
 
 ## What Circle already gives you, and what STEWARD adds
 
@@ -53,7 +53,8 @@ Contractor UI ── milestone + EIP-712 sig ──▶ FastAPI ──┘        
 | AllowanceManager | [`0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6`](https://explorer.testnet.arc.io/address/0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6) | [0xf3dab09563…](https://explorer.testnet.arc.io/tx/0xf3dab095635acdc653bcea683d434139179bbfad863bd975186a95df42cb15cd) |
 | AuditLog | [`0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866`](https://explorer.testnet.arc.io/address/0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866) | [0x81a8c25ffb…](https://explorer.testnet.arc.io/tx/0x81a8c25ffb38f83151044211a756051d1a919e7a1357aeb74ba16531c8af847e) |
 | MockUSYC (ERC-4626 stand-in, disclosed) | [`0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D`](https://explorer.testnet.arc.io/address/0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D) | [0xbfae91f973…](https://explorer.testnet.arc.io/tx/0xbfae91f9732950feaf3ea6b8e40ed3a023801e30656a7e56e0d2a0e00d011ee8) |
-| YieldSweeper (floor 100 USDC) | [`0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5`](https://explorer.testnet.arc.io/address/0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5) | [0x2159648069…](https://explorer.testnet.arc.io/tx/0x2159648069a0a43ab11bf29dc23db63d58ee47151c28ecd9c73c5b8236e171f3) |
+| YieldSweeper (owner = Circle owner wallet, floor 1 USDC for faucet-sized budgets) | [`0xA499F1053c66eCE47B49Fb0bA87228Cc729fC9D1`](https://explorer.testnet.arc.io/address/0xA499F1053c66eCE47B49Fb0bA87228Cc729fC9D1) | [0x79854caa27…](https://explorer.testnet.arc.io/tx/0x79854caa27e203f0b1f5fac0e08dafd8a81f4e2c4ad4f48d2f06be453affa890) |
+| ~~YieldSweeper v1~~ (superseded: constructor set `owner = msg.sender`, i.e. the deployer; fixed with an explicit owner param) | [`0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5`](https://explorer.testnet.arc.io/address/0xa8A0D9e701309ABDF7be07Ad8f42528b24746Fc5) | [0x2159648069…](https://explorer.testnet.arc.io/tx/0x2159648069a0a43ab11bf29dc23db63d58ee47151c28ecd9c73c5b8236e171f3) |
 
 Wallets are Circle Developer-Controlled Wallets on ARC-TESTNET: owner `0x7bc79b07faa88299667ce65283129b314cb15c2f`, agent `0x380a28198b0759ca4b67d5b03ffb5f68a77c8a47`, contractor `0xf8630fe8087c26cd397221ea61e652074797610c`, judge `0x32b6dceb157db35dd60f56678e0618739f25ffe0`.
 

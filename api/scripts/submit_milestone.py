@@ -30,6 +30,7 @@ def main() -> None:
     p.add_argument("--am", required=True, help="AllowanceManager address")
     p.add_argument("--chain-id", type=int, default=5042002)
     p.add_argument("--payout", choices=["arc", "base-sepolia"], default="arc", help="receive on Arc, or on Base Sepolia via CCTP V2 (owner-executed)")
+    p.add_argument("--sign-only", action="store_true", help="print the signed JSON body instead of posting it (send it to the owner to submit; your key never leaves this machine)")
     a = p.parse_args()
 
     amount = int(round(a.amount * 1e6))
@@ -43,6 +44,10 @@ def main() -> None:
     sig = sig if sig.startswith("0x") else "0x" + sig
     body = {"allowance_id": a.allowance, "title": a.title, "amount": amount, "evidence_url": a.evidence, "nonce": nonce, "signature": sig,
             "payout_chain": a.payout}
+    if a.sign_only:
+        print(json.dumps(body, indent=2))
+        print(f"# signed by {acct.address}; the owner submits it with: curl -X POST <API>/milestones -H 'content-type: application/json' -d @milestone.json")
+        return
     r = httpx.post(f"{a.api}/milestones", json=body, timeout=30)
     print(r.status_code, json.dumps(r.json(), indent=2))
     print(f"signed by {acct.address}")

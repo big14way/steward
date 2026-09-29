@@ -18,13 +18,15 @@ contract Deploy is Script {
     function run() external {
         uint256 pk = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address agent = vm.envAddress("AGENT_ADDRESS");
+        address owner = vm.envOr("OWNER_ADDRESS", vm.addr(pk));   // treasury owner = Circle owner wallet; falls back to the deployer
         bool useMock = vm.envOr("USE_MOCK_USYC", true);
+        uint128 floor = uint128(vm.envOr("RESERVE_FLOOR", uint256(100e6)));   // 100 USDC default; 1 USDC for faucet-sized budgets
 
         vm.startBroadcast(pk);
         AllowanceManager am = new AllowanceManager(ARC_USDC);
         AuditLog log = new AuditLog();
         address vault = useMock ? address(new MockUSYC(IERC20(ARC_USDC))) : vm.envAddress("USYC_VAULT");
-        YieldSweeper sweeper = new YieldSweeper(ARC_USDC, vault, agent, 100e6); // 100 USDC floor
+        YieldSweeper sweeper = new YieldSweeper(ARC_USDC, vault, owner, agent, floor);
         vm.stopBroadcast();
 
         console2.log("AllowanceManager", address(am));

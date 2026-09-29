@@ -21,12 +21,18 @@ contract YieldSweeper {
 
     error NotOwner(); error NotAgentOrOwner(); error BelowFloor();
 
-    constructor(address usdc, address vault, address _agent, uint128 _floor) {
-        USDC = IERC20(usdc); VAULT = IERC4626(vault); owner = msg.sender; agent = _agent; reserveFloor = _floor;
+    event OwnerChanged(address indexed previousOwner, address indexed newOwner);
+    event AgentChanged(address indexed previousAgent, address indexed newAgent);
+
+    /// @param _owner the treasury owner (a Circle Developer-Controlled wallet in the reference deployment), not the deployer.
+    constructor(address usdc, address vault, address _owner, address _agent, uint128 _floor) {
+        USDC = IERC20(usdc); VAULT = IERC4626(vault); owner = _owner; agent = _agent; reserveFloor = _floor;
         USDC.forceApprove(vault, type(uint256).max);
     }
 
     function setFloor(uint128 f) external { if (msg.sender != owner) revert NotOwner(); reserveFloor = f; }
+    function setAgent(address a) external { if (msg.sender != owner) revert NotOwner(); emit AgentChanged(agent, a); agent = a; }
+    function transferOwnership(address o) external { if (msg.sender != owner) revert NotOwner(); emit OwnerChanged(owner, o); owner = o; }
 
     /// Sweep everything above (floor + obligations) into the vault. Agent computes `obligations` off-chain and logs it.
     function sweep(uint128 obligationsNext7d) external returns (uint256 shares) {

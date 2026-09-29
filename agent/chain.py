@@ -1,7 +1,6 @@
 """web3 reads + writes with Arc's 20 gwei floor baked in. Writes go through the local signer or a Circle wallet."""
 import json
 import os
-import sys
 from pathlib import Path
 
 from eth_account import Account
@@ -22,8 +21,11 @@ LOG = w3.eth.contract(address=Web3.to_checksum_address(AUDIT_LOG), abi=_abi("Aud
 acct = Account.from_key(AGENT_PK) if SIGNER == "local" else None
 if SIGNER == "circle":
     # ADAPT (Day 2): route writes through the Circle Developer-Controlled agent wallet; no key on this box.
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "api"))
-    import circle_client as cc  # noqa: E402
+    # Loaded by file path (not sys.path) so the API folder's db.py never shadows the agent's own db module.
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("circle_client", Path(__file__).resolve().parent.parent / "api" / "circle_client.py")
+    cc = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(cc)
 
 
 def agent_address() -> str:

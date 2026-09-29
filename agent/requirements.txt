@@ -7,3 +7,4 @@ groq
 anthropic
 python-telegram-bot>=21
 python-dotenv
+circle-developer-controlled-wallets   # SIGNER=circle path (api/circle_client.py loaded by file)
