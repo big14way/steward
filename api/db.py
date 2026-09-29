@@ -28,7 +28,12 @@ def init() -> None:
         CREATE TABLE IF NOT EXISTS integrators(name TEXT PRIMARY KEY, repo TEXT, created_at INT);
         CREATE TABLE IF NOT EXISTS treasury(id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, assets INT, shares INT, tx TEXT, created_at INT,
             hash TEXT, record_tx TEXT, bal_after INT, obligations INT, canonical TEXT);
+        CREATE TABLE IF NOT EXISTS contractors(id TEXT PRIMARY KEY, name TEXT, contact TEXT, address TEXT, circle_wallet_id TEXT,
+            allowance_id INT UNIQUE, token TEXT UNIQUE, status TEXT DEFAULT 'active', created_at INT);
         """)
+        mcols0 = {r[1] for r in c.execute("PRAGMA table_info(milestones)")}
+        if "auth" not in mcols0:   # wallet (EIP-712 by the payee's own wallet) | circle (signed by the payee's Circle wallet) | link (invite-link possession)
+            c.execute("ALTER TABLE milestones ADD COLUMN auth TEXT DEFAULT 'wallet'")
         cols = {r[1] for r in c.execute("PRAGMA table_info(decisions)")}
         if "escalation_hash" not in cols:   # migration for DBs created before the PARTIAL remainder-hash fix
             c.execute("ALTER TABLE decisions ADD COLUMN escalation_hash TEXT")

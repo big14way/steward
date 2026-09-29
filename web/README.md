@@ -8,5 +8,5 @@ npm install
 npm run dev                  # http://localhost:3000
 ```
 
-Pages: `/` stats + latest decisions · `/allowances` create / fund / revoke (owner secret) · `/decisions` log with hash, rule, reason, replay ·
-`/escalations` one-tap approve / reject · `/contractor` EIP-712 milestone submission with an injected wallet on Arc Testnet · `/sdk`.
+Pages: `/` overview · `/contractors` add contractor, copy their link, top up, end budget · `/approvals` one-tap approve / decline · `/activity` audit log with replay ·
+`/treasury` reserve + vault · `/c/[token]` the contractor's private page (request payment, track status; no wallet needed) · `/contractor` own-wallet signing (advanced) · `/sdk`.

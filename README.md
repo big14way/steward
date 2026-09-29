@@ -4,11 +4,11 @@
 
 Businesses are letting AI agents pay contractors and vendors, but the agent either holds a hot key or asks permission for everything. STEWARD gives an agent a **per-payee allowance enforced by a contract on Arc** (cap per period, cap per transaction, expiry, owner revocation), a **decision log** where every payment carries the inputs it saw, the rule it applied and the reason it wrote, hashed on-chain so an auditor can replay it, and **one-tap human escalation** only when policy is hit.
 
-## 📊 Live stats — Arc Testnet (updated Sep 29, 01:28 UTC)
+## 📊 Live stats — Arc Testnet (updated Sep 29, 08:04 UTC)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
-| 2 | 1 | 2 | 4.80 | 3 | 1/0/0/2/0 | 100% | 100% | 2.00 | 0 |
+| 3 | 1 | 3 | 5.00 | 5 | 2/0/0/3/0 | 100% | 100% | 2.00 | 0 |
 
 _Live since Sep 29, 2026 through Circle Developer-Controlled wallets: first `AuditLog.record()` + `pay()` from the agent wallet ([record](https://explorer.testnet.arc.io/tx/0x04a63c281b7c6d90bca2b7f3ac3322d24acf97cbfb9bc89a8fc9a4f6640f01fb), [pay 0.80 USDC](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61)), `approveAndPay()` from the owner wallet ([1.50 USDC](https://explorer.testnet.arc.io/tx/0x71808a88a31abc7da50d61d90af18dcd67ff1525857e862507f7e4c1579e5791), then a judge-approved 2.50 USDC over-cap request [via the dashboard](https://explorer.testnet.arc.io/tx/0xb592923003f2310820d25d518a0571d8fbff1b8e1efafb21b8769c2413af1fc1)). Faucet-sized budgets for now (allowance #0 = judge demo, #1 = the freelancer). The table is a copy of `GET /stats`; per-day notes: [day 1](docs/day1-checks.md) · [2](docs/day2-local-e2e.md) · [6](docs/day6-treasury.md) · [7](docs/day7-crosschain-judge.md) · [8](docs/day8-adversarial.md) · [9](docs/day9-sdk.md) · [go-live](docs/testnet-go-live.md)._
 
@@ -114,9 +114,26 @@ Three layers, all exercised ([docs/day8-adversarial.md](docs/day8-adversarial.md
 
 Scaffolding for Circle wallet creation and webhook verification is adapted from [`circlefin/arc-escrow`](https://github.com/circlefin/arc-escrow) (disclosed). Everything else is written Sep 28 – Oct 10, 2026.
 
+## How you use it (owner and contractor)
+
+**Owner.** Sign in once (top-right chip). *Contractors → Add contractor*: name, contact, optional wallet, max per payment, max per period, fund now.
+No wallet? STEWARD creates a Circle Developer-Controlled wallet for them, exactly as Circle's own `arc-escrow` sample does at sign-up. You get a
+private link to send them. From then on you only see *Approvals* (requests over policy, in plain English, one tap) and *Activity* (the audit log).
+
+**Contractor.** Opens the link. Sees who pays them, their per-payment cap, what is left this period, and a *Request a payment* form: what they delivered,
+a link to the work, the amount. A timeline follows each request: Submitted → Agent review (rule + reason, on-chain) → Paid / Waiting for the owner /
+On hold / Blocked. No wallet, no sign-up, no gas. Their own-wallet path (`/contractor`, MetaMask on Arc Testnet) still exists for people who want to sign themselves.
+
+**Why this shape.** The allowance is the same primitive as Safe's *Spending Limits* and Coinbase's *Spend Permissions* (beneficiary, token, amount per period,
+expiry, revoke); the request/approve loop is Upwork's fixed-price milestone flow with the agent as the "approve within policy" step; the wallet-for-the-contractor
+and status pills come from Circle's `arc-escrow` reference app. Details and references: [docs/product-flow.md](docs/product-flow.md).
+
 ## Judge mode
 
-Set `NEXT_PUBLIC_JUDGE_MODE=true` on the dashboard. You are the owner of **Acme Studio**. The banner carries a **judge secret** that is scoped to approve / reject escalations only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke — those need the real owner secret). Every signature happens server-side through the owner's Circle Developer-Controlled wallet, so there is nothing to install: click **Approve a pending escalation**, approve the over-cap request, and watch `approveAndPay()` land on the explorer within about 20 seconds. The Contractor page is for payees with a browser wallet (MetaMask on Arc Testnet, or the MetaMask mobile in-app browser); without one, the page says so and points to the offline signing CLI. Details in [docs/day7-crosschain-judge.md](docs/day7-crosschain-judge.md).
+Set `NEXT_PUBLIC_JUDGE_MODE=true` on the dashboard. You are the owner of **Acme Studio**. The banner's **Open approvals** button takes you to the inbox; the
+**judge secret** in the banner is scoped to approve / reject only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke). Every signature happens
+server-side through the owner's Circle Developer-Controlled wallet, so there is nothing to install: approve the pending request and watch `approveAndPay()`
+land on the explorer within about 20 seconds. Details in [docs/day7-crosschain-judge.md](docs/day7-crosschain-judge.md).
 
 ## Status (honest)
 

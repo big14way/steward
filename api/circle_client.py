@@ -26,8 +26,16 @@ def _api():
     return _tx
 
 
+TRANSIENT = ("ConnectionError", "RemoteDisconnected", "ProtocolError", "ReadTimeout", "ConnectTimeout", "ChunkedEncodingError")
+
+
+def _transient(e: Exception) -> bool:
+    return any(t in type(e).__name__ or t in str(e) for t in TRANSIENT)
+
+
 def execute(wallet_id: str, contract: str, signature: str, params: list, fee_level: str = "MEDIUM") -> str:
-    """Submit a contract call; returns the Circle transaction id. Poll with wait()."""
+    """Submit a contract call; returns the Circle transaction id. Poll with wait().
+    The idempotency key is fixed before the first attempt, so a retry after a dropped connection cannot double-submit."""
     from circle.web3 import developer_controlled_wallets as dcw
     req = dcw.CreateContractExecutionTransactionForDeveloperRequest.from_dict({
         "idempotencyKey": str(uuid.uuid4()),
@@ -37,14 +45,27 @@ def execute(wallet_id: str, contract: str, signature: str, params: list, fee_lev
         "abiParameters": params,
         "feeLevel": fee_level,   # Circle prices Arc's 20 gwei floor itself; ADAPT to gasLimit/maxFee overrides if a tx is ever dropped
     })
-    return _api().create_developer_transaction_contract_execution(req).data.id
+    for attempt in range(3):
+        try:
+            return _api().create_developer_transaction_contract_execution(req).data.id
+        except Exception as e:
+            if attempt == 2 or not _transient(e):
+                raise
+            time.sleep(2 * (attempt + 1))
+    raise RuntimeError("unreachable")
 
 
 def wait(tx_id: str, timeout: int = 120) -> dict:
-    """Poll until COMPLETE/FAILED. Returns {'state','txHash','id'}."""
+    """Poll until COMPLETE/FAILED. Returns {'state','txHash','id'}. Transient HTTP errors while polling are retried."""
     t0 = time.time()
     while time.time() - t0 < timeout:
-        r = _api().get_transaction(id=tx_id).data.transaction
+        try:
+            r = _api().get_transaction(id=tx_id).data.transaction
+        except Exception as e:
+            if not _transient(e):
+                raise
+            time.sleep(3)
+            continue
         state = r.state
         if state in ("COMPLETE", "CONFIRMED") and getattr(r, "tx_hash", None):
             return {"state": state, "txHash": r.tx_hash, "id": tx_id}
