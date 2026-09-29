@@ -7,8 +7,11 @@ import Chrome from "./chrome";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "STEWARD — let your agent pay people, within limits you set",
-  description: "Per-contractor budgets enforced on-chain, every payment decision logged and replayable, and a one-tap approval when a request is over policy. USDC on Arc.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://steward-arc.vercel.app"),
+  title: "STEWARD — let your AI agent pay people, within limits it can’t cross",
+  description: "Per-contractor budgets enforced on-chain, every payment decision logged and replayable, and a one-tap approval when a request is over policy. USDC on Arc, Circle wallets.",
+  openGraph: { title: "STEWARD", description: "On-chain budgets, a replayable decision log and human escalation for AI agents that pay people on Arc.", images: ["/shots/dashboard.jpg"] },
+  twitter: { card: "summary_large_image", images: ["/shots/dashboard.jpg"] },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
