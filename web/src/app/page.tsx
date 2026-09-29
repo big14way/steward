@@ -8,7 +8,7 @@ async function stats(): Promise<Stats | null> {
   try { return await get<Stats>("/stats"); } catch { return null; }
 }
 
-function Shot({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+function Shot({ src, alt, className = "", eager = false }: { src: string; alt: string; className?: string; eager?: boolean }) {
   return (
     <div className={`rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/50 overflow-hidden ${className}`}>
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-zinc-800 bg-zinc-950/60">
@@ -16,7 +16,7 @@ function Shot({ src, alt, className = "" }: { src: string; alt: string; classNam
         <span className="ml-3 text-[11px] text-zinc-500 truncate">steward-arc.vercel.app</span>
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="block w-full h-auto" loading="lazy" />
+      <img src={src} alt={alt} className="block w-full h-auto" loading={eager ? "eager" : "lazy"} />
     </div>
   );
 }
@@ -34,7 +34,7 @@ export default async function Landing() {
         <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-400 mb-6">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live on Arc Testnet · Circle wallets · Tameion 2026
         </div>
-        <h1 className="text-4xl sm:text-6xl font-semibold tracking-tight leading-[1.05]">Let your AI agent pay people.<br /><span className="text-zinc-400">Within limits it can’t cross.</span></h1>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-balance">Let your AI agent pay people.<br /><span className="text-zinc-400">Within limits it can’t cross.</span></h1>
         <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto">
           STEWARD gives every contractor a budget enforced by a smart contract, writes down why every payment happened, and asks you only when a request is over policy. USDC on Arc, signed by Circle wallets, nothing to install.
         </p>
@@ -46,7 +46,7 @@ export default async function Landing() {
 
       {/* product shot */}
       <section className="max-w-5xl mx-auto -mt-8">
-        <Shot src="/shots/dashboard.jpg" alt="STEWARD owner dashboard: balance, budgets, decisions" />
+        <Shot src="/shots/dashboard.jpg" alt="STEWARD owner dashboard: balance, budgets, decisions" eager />
       </section>
 
       {/* live strip */}
@@ -96,7 +96,7 @@ export default async function Landing() {
 
       {/* owner side */}
       <section className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
-        <Shot src="/shots/approvals.jpg" alt="Approvals inbox with a plain-English reason and one-tap approve" className="order-2 lg:order-1" />
+        <Shot src="/shots/contractors.jpg" alt="Contractors with on-chain budgets, spend bars and private links" className="order-2 lg:order-1" />
         <div className="order-1 lg:order-2">
           <div className="text-xs uppercase tracking-wide text-emerald-400">For owners</div>
           <h2 className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">An inbox instead of a hot key.</h2>
