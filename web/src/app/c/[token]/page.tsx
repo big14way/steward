@@ -14,7 +14,8 @@ function Timeline({ m }: { m: Milestone }) {
   ];
   if (!d) steps.push({ label: "Agent review", detail: "checks screening, evidence, caps and liquidity — usually within a few minutes", tone: "wait" });
   else {
-    steps.push({ label: "Agent review", detail: `${ruleText(d.rule)} — ${d.reason ?? ""}`, at: d.created_at, link: d.record_tx ?? undefined, tone: d.action === "SCREEN_FAIL" ? "bad" : "done" });
+    const rt = ruleText(d.rule); const reason = d.reason ?? "";
+    steps.push({ label: "Agent review", detail: reason.toLowerCase().startsWith(rt.toLowerCase().slice(0, 12)) ? reason : `${rt} — ${reason}`, at: d.created_at, link: d.record_tx ?? undefined, tone: d.action === "SCREEN_FAIL" ? "bad" : "done" });
     if (d.pay_tx) steps.push({ label: `Paid ${usd(d.amount ?? 0)} USDC`, at: d.created_at, link: d.pay_tx, tone: "done" });
     if ((d.remainder ?? 0) > 0 && d.action !== "SCREEN_FAIL") {
       if (d.approved_tx) steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, link: d.approved_tx, tone: "done" });

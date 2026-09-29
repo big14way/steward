@@ -45,3 +45,16 @@ The contract, the rules engine, the canonical hash, the escalation model, and th
 - "Demo Designer" added with no wallet → Circle wallet `0x8EF2…E66F` created, budget #2 created and funded from the owner's Circle wallet, link issued.
 - Request from the link (0.3 USDC) → signed by the contractor's Circle wallet → agent `ESCALATE` (reserve floor still 1 USDC vs a 0.5 budget; floor set to 0 for faucet-sized budgets afterwards).
 - Second request (0.2 USDC) → agent `PAY` from the Circle agent wallet; the contractor's Circle wallet balance rose accordingly; the portal timeline shows Submitted → Agent review → Paid with tx links.
+
+## Real-browser verification (Sep 29, 2026, Brave via Claude in Chrome)
+
+Owner: signed in → *Contractors → Add contractor* → "Test Writer" (no wallet) → budget 0.50 per payment / 1.00 per week / fund 0.30 →
+Confirm summary → **a Circle wallet was created, the budget went on-chain from the owner's Circle wallet, and the private link appeared**.
+Contractor: opened that link in the same browser → "Blog post: launch announcement" 0.25 USDC with a Drive link → *Submit request* →
+timeline showed "Request submitted — signed by your Circle wallet", then "Agent review — Within policy…", then **"Paid 0.25 USDC"** with the
+on-chain link, without any wallet software, sign-up, or gas on the contractor's side.
+
+Fixes that came out of looking at it in a real browser: the scaffold's light-mode CSS overrode the dark theme (pinned in `globals.css`);
+browser `prompt()`/`confirm()` dialogs replaced by inline forms; the API is now proxied through the dashboard origin (`/api`), so one public
+host and no CORS; icon nav, avatars, toasts, skeletons, empty states, a guided three-step add-contractor dialog with a confirm summary
+(after Safe's spending-limit flow), and an account card with the owner balance and primary actions (after Circle's escrow sample).
