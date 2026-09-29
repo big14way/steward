@@ -322,7 +322,15 @@ def get_allowance(id: int):
 
 @app.get("/stats")
 def stats():
-    return db.stats()
+    """DB-derived numbers, with allowances / contractors taken from the chain so allowances without milestones yet still count."""
+    s = db.stats()
+    try:
+        n = AM.functions.nextId().call()
+        payees = {_allowance(i)["payee"].lower() for i in range(n)}
+        s["allowances"], s["contractors"] = n, len(payees)
+    except Exception:
+        pass   # chain unreachable → keep the DB-derived counts
+    return s
 
 
 class TreasuryIn(BaseModel):

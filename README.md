@@ -4,11 +4,11 @@
 
 Businesses are letting AI agents pay contractors and vendors, but the agent either holds a hot key or asks permission for everything. STEWARD gives an agent a **per-payee allowance enforced by a contract on Arc** (cap per period, cap per transaction, expiry, owner revocation), a **decision log** where every payment carries the inputs it saw, the rule it applied and the reason it wrote, hashed on-chain so an auditor can replay it, and **one-tap human escalation** only when policy is hit.
 
-## 📊 Live stats — Arc Testnet (updated Sep 29, 01:27 UTC)
+## 📊 Live stats — Arc Testnet (updated Sep 29, 01:28 UTC)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | 1 | 4.80 | 3 | 1/0/0/2/0 | 100% | 100% | 2.00 | 0 |
+| 2 | 1 | 2 | 4.80 | 3 | 1/0/0/2/0 | 100% | 100% | 2.00 | 0 |
 
 _Live since Sep 29, 2026 through Circle Developer-Controlled wallets: first `AuditLog.record()` + `pay()` from the agent wallet ([record](https://explorer.testnet.arc.io/tx/0x04a63c281b7c6d90bca2b7f3ac3322d24acf97cbfb9bc89a8fc9a4f6640f01fb), [pay 0.80 USDC](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61)), `approveAndPay()` from the owner wallet ([1.50 USDC](https://explorer.testnet.arc.io/tx/0x71808a88a31abc7da50d61d90af18dcd67ff1525857e862507f7e4c1579e5791), then a judge-approved 2.50 USDC over-cap request [via the dashboard](https://explorer.testnet.arc.io/tx/0xb592923003f2310820d25d518a0571d8fbff1b8e1efafb21b8769c2413af1fc1)). Faucet-sized budgets for now (allowance #0 = judge demo, #1 = the freelancer). The table is a copy of `GET /stats`; per-day notes: [day 1](docs/day1-checks.md) · [2](docs/day2-local-e2e.md) · [6](docs/day6-treasury.md) · [7](docs/day7-crosschain-judge.md) · [8](docs/day8-adversarial.md) · [9](docs/day9-sdk.md) · [go-live](docs/testnet-go-live.md)._
 
