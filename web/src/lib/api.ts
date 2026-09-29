@@ -1,7 +1,9 @@
 // Browser code uses the public API URL; server components can use API_INTERNAL (e.g. http://127.0.0.1:8001) when the API runs
 // next to the Next.js server, which avoids a round trip through the public hostname (and any DNS/tunnel quirks).
-const PUBLIC_API = process.env.NEXT_PUBLIC_API ?? "http://127.0.0.1:8001";
-const API = typeof window === "undefined" ? (process.env.API_INTERNAL ?? PUBLIC_API) : PUBLIC_API;
+// Browser: same-origin "/api" (proxied by next.config.ts rewrites) unless NEXT_PUBLIC_API points elsewhere.
+// Server components: API_INTERNAL directly.
+const PUBLIC_API = process.env.NEXT_PUBLIC_API || "/api";
+const API = typeof window === "undefined" ? (process.env.API_INTERNAL ?? (PUBLIC_API.startsWith("/") ? "http://127.0.0.1:8001" : PUBLIC_API)) : PUBLIC_API;
 export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://explorer.testnet.arc.io";
 export const BASE_SEPOLIA_EXPLORER = "https://sepolia.basescan.org";
 

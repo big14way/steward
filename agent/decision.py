@@ -94,6 +94,34 @@ def llm_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder:
         return None
 
 
+def rules_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder: int) -> str:
+    """Human-readable fallback reason (used when no LLM is configured or its output fails validation).
+    Says what was checked and what the numbers were, so an owner or auditor can follow it without the rule codes."""
+    u = lambda v: f"{v/1e6:.2f} USDC"
+    room = i.period_cap - i.spent_this_period
+    liquid = max(i.funded - i.reserve_floor - i.obligations_next_7d, 0)
+    base = rule.replace("_xchain", "")
+    if base == "R1_screen":
+        text = f"Payee failed screening ({i.payee_screen}). Nothing was paid and this request cannot be approved."
+    elif base == "R2_no_evidence":
+        text = "No link to the work was attached, so the request is on hold. Add evidence and submit again."
+    elif base == "R3_over_per_tx":
+        text = f"Requested {u(i.requested)}, above the {u(i.per_tx_cap)} per-payment cap. Sent to the owner to approve."
+    elif base == "R4_no_room":
+        why = f"only {u(room)} of the period budget is left" if room < liquid else f"only {u(liquid)} is available after the reserve floor and other open requests"
+        text = f"Requested {u(i.requested)} but {why}. Sent to the owner to approve."
+    elif rule.endswith("_xchain"):
+        # in-policy, but the payout happens on another chain, which only the owner's wallet can execute
+        allowed = min(i.requested, room, liquid)
+        fit = f"{u(allowed)} of {u(i.requested)} fits the budget" if allowed < i.requested else f"{u(i.requested)} is within the caps"
+        text = f"{fit}, but payout on {i.payout_chain} is executed by the owner's wallet (CCTP). Sent to the owner to approve."
+    elif base == "R4_partial":
+        text = f"Requested {u(i.requested)}; {u(amount)} fits the budget and was paid now, the remaining {u(remainder)} needs the owner's approval."
+    else:
+        text = f"Within policy: evidence attached, {u(i.requested)} is under the {u(i.per_tx_cap)} per-payment cap and the {u(room)} left this period. Paid."
+    return text
+
+
 def decide(i: DecisionInput, use_llm: bool = True) -> Decision:
     rule, action, amount, remainder = apply_rules(i)
     if i.payout_chain != "arc" and action in ("PAY", "PARTIAL"):
@@ -104,7 +132,7 @@ def decide(i: DecisionInput, use_llm: bool = True) -> Decision:
     llm = llm_reason(i, rule, action, amount, remainder) if use_llm else None
     if llm:
         return Decision(i, rule, action, amount, remainder, llm["reason"], llm["timing"], "llm")
-    return Decision(i, rule, action, amount, remainder, f"{rule}: {action} {amount/1e6:.2f} USDC by policy", "now", "rules")
+    return Decision(i, rule, action, amount, remainder, rules_reason(i, rule, action, amount, remainder), "now", "rules")
 
 
 def canonical_json(d: Decision) -> str:
