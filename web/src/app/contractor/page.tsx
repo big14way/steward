@@ -22,7 +22,9 @@ const STATUS: Record<string, string> = { pending: "text-zinc-300", paid: "text-e
 
 export default function Page() {
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connect, connectors, error: connectError, isPending: connecting } = useConnect();
+  const [hasProvider, setHasProvider] = useState<boolean | null>(null);
+  useEffect(() => { setHasProvider(typeof window !== "undefined" && !!(window as unknown as { ethereum?: unknown }).ethereum); }, []);
   const { disconnect } = useDisconnect();
   const { signTypedDataAsync } = useSignTypedData();
   const chainId = useChainId();
@@ -54,10 +56,24 @@ export default function Page() {
       <div className="space-y-4 max-w-lg">
         <h1 className="text-xl font-semibold">Contractor</h1>
         <p className="text-sm text-zinc-400">Connect the wallet the owner set as payee on your allowance. You sign a milestone (EIP-712, no gas); the agent decides within one cycle and pays in USDC on Arc.</p>
-        {connectors.map((c) => (
-          <button key={c.uid} onClick={() => connect({ connector: c })} className="bg-zinc-100 text-zinc-900 rounded px-4 py-2 mr-2">Connect {c.name}</button>
-        ))}
-        {connectors.length === 0 && <div className="text-zinc-500 text-sm">No injected wallet found. Install MetaMask, or use <code>api/scripts/submit_milestone.py</code>.</div>}
+        {hasProvider === false ? (
+          <div className="rounded border border-amber-500/30 bg-amber-500/10 text-amber-100 text-sm p-4 space-y-2">
+            <div className="font-medium">No browser wallet detected on this page.</div>
+            <ul className="list-disc pl-5 space-y-1 text-amber-100/90">
+              <li><b>Desktop:</b> install the MetaMask extension (metamask.io), import or select the payee wallet, then reload this page.</li>
+              <li><b>Phone:</b> open this exact link inside the MetaMask app (Browser tab) — mobile Safari/Chrome cannot inject a wallet.</li>
+              <li><b>No wallet at all:</b> sign offline with <code>api/scripts/submit_milestone.py --sign-only</code> and send the JSON to the owner.</li>
+            </ul>
+          </div>
+        ) : (
+          connectors.map((c) => (
+            <button key={c.uid} disabled={connecting} onClick={() => connect({ connector: c })} className="bg-zinc-100 text-zinc-900 disabled:opacity-50 rounded px-4 py-2 mr-2">
+              {connecting ? "Connecting…" : `Connect ${c.name}`}
+            </button>
+          ))
+        )}
+        {connectError && <div className="text-red-300 text-sm">{connectError.message.split("\n")[0]}</div>}
+        <div className="text-xs text-zinc-500">Network: Arc Testnet (chain id 5042002, RPC https://rpc.testnet.arc.io, currency USDC). The page adds it to MetaMask for you when you switch.</div>
       </div>
     );
   }

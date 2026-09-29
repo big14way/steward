@@ -44,6 +44,14 @@ def owner_auth(secret: str):
         raise HTTPException(401)
 
 
+def approver_auth(secret: str):
+    """Owner secret, or the scoped judge secret (approve / reject only — cannot create, fund, or revoke)."""
+    js = os.environ.get("JUDGE_SECRET")
+    if js and secret == js:
+        return
+    owner_auth(secret)
+
+
 # ---- EIP-712 milestone typed data (contractor signs in browser or CLI; server verifies) ----
 DOMAIN = {"name": "STEWARD", "version": "1", "chainId": CHAIN_ID, "verifyingContract": AM_ADDR}
 TYPES = {"Milestone": [{"name": "allowanceId", "type": "uint256"}, {"name": "title", "type": "string"},
@@ -216,7 +224,7 @@ class ApproveIn(BaseModel):
 
 @app.post("/escalations/{hash}/approve")
 def approve(hash: str, body: ApproveIn):
-    owner_auth(body.owner_secret)
+    approver_auth(body.owner_secret)
     with db.conn() as c:
         d = c.execute("SELECT * FROM decisions WHERE hash=?", (hash,)).fetchone()
     if not d:
@@ -248,7 +256,7 @@ def approve(hash: str, body: ApproveIn):
 
 @app.post("/escalations/{hash}/reject")
 def reject(hash: str, body: ApproveIn):
-    owner_auth(body.owner_secret)
+    approver_auth(body.owner_secret)
     with db.conn() as c:
         c.execute("UPDATE decisions SET human_agreed=0 WHERE hash=?", (hash,))
         c.execute("UPDATE milestones SET status='rejected' WHERE id=(SELECT milestone_id FROM decisions WHERE hash=?)", (hash,))

@@ -116,7 +116,7 @@ Scaffolding for Circle wallet creation and webhook verification is adapted from 
 
 ## Judge mode
 
-Set `NEXT_PUBLIC_JUDGE_MODE=true` on the dashboard. You are the owner of **Acme Studio**; the owner secret (shared in the submission form, or `API_SECRET` in your own deployment) unlocks `/escalations` and `/allowances`. Every signature happens server-side through the owner's Circle Developer-Controlled wallet, so there is nothing to install: open `/escalations`, approve the pending 350 USDC request, and watch `approveAndPay()` land on the explorer. Details in [docs/day7-crosschain-judge.md](docs/day7-crosschain-judge.md).
+Set `NEXT_PUBLIC_JUDGE_MODE=true` on the dashboard. You are the owner of **Acme Studio**. The banner carries a **judge secret** that is scoped to approve / reject escalations only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke — those need the real owner secret). Every signature happens server-side through the owner's Circle Developer-Controlled wallet, so there is nothing to install: click **Approve a pending escalation**, approve the over-cap request, and watch `approveAndPay()` land on the explorer within about 20 seconds. The Contractor page is for payees with a browser wallet (MetaMask on Arc Testnet, or the MetaMask mobile in-app browser); without one, the page says so and points to the offline signing CLI. Details in [docs/day7-crosschain-judge.md](docs/day7-crosschain-judge.md).
 
 ## Status (honest)
 

@@ -10,7 +10,9 @@ export default function Page() {
   const load = () => get<Decision[]>("/escalations").then(setItems).catch(() => setItems([]));
   useEffect(() => {
     load();
-    try { setSecret(localStorage.getItem("steward.owner_secret") ?? ""); } catch {}
+    try { setSecret(localStorage.getItem("steward.owner_secret") || process.env.NEXT_PUBLIC_JUDGE_SECRET || ""); } catch { setSecret(process.env.NEXT_PUBLIC_JUDGE_SECRET ?? ""); }
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
   }, []);
   const act = async (h: string, kind: "approve" | "reject") => {
     setBusy(h); setMsg("");

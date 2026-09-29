@@ -26,9 +26,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="ml-auto text-xs text-zinc-500">Arc Testnet · 5042002</span>
           </nav>
           {process.env.NEXT_PUBLIC_JUDGE_MODE === "true" && (
-            <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-200 text-sm px-6 py-2">
-              Judge mode: you are the owner of <b>Acme Studio</b>. Allowance #0 is funded with test USDC. Try approving a pending
-              escalation on the Escalations page (owner secret is in the README). Signing happens server-side via Circle wallets — nothing to install.
+            <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-200 text-sm px-6 py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>Judge mode: you are the owner of <b>Acme Studio</b>. Allowance #0 is funded with test USDC. Signing happens server-side via Circle wallets — nothing to install.</span>
+              <Link href="/escalations" className="rounded bg-amber-400 text-zinc-900 font-medium px-3 py-1">Approve a pending escalation →</Link>
+              {process.env.NEXT_PUBLIC_JUDGE_SECRET && <span className="text-xs text-amber-200/80">judge secret: <code>{process.env.NEXT_PUBLIC_JUDGE_SECRET}</code> (approve / reject only)</span>}
             </div>
           )}
           <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">{children}</main>
