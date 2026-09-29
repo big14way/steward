@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Inbox, ArrowUpRight, ShieldAlert, Check, X } from "lucide-react";
-import { get, post, usd, tx, ago, ruleText, JUDGE_SECRET, type Decision, type Contractor, type Milestone } from "@/lib/api";
+import Link from "next/link";
+import { get, post, usd, tx, ago, ruleText, DEMO_ENABLED, type Decision, type Contractor, type Milestone } from "@/lib/api";
 import { useOwnerSecret } from "../owner-chip";
 import { Avatar, Button, Card, EmptyState, PageHeader, Pill, Skeleton, useToast } from "../ui";
 
@@ -9,7 +10,7 @@ type Item = Decision & { milestone?: Milestone };
 
 export default function Page() {
   const owner = useOwnerSecret();
-  const secret = owner || JUDGE_SECRET;
+  const secret = owner;
   const toast = useToast();
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState("");
@@ -35,7 +36,7 @@ export default function Page() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Approvals" description="Requests the agent would not pay on its own. Approving pays from your Circle wallet in one transaction — it bypasses the agent's caps but never the funding, the kill switch, or the one-hash-pays-once rule." />
-      {!secret && <Card className="p-3 mb-4 text-sm text-amber-200 border-amber-500/30 bg-amber-500/5">Sign in as the owner (top right) to approve or decline.</Card>}
+      {!secret && <Card className="p-3 mb-4 text-sm text-amber-200 border-amber-500/30 bg-amber-500/5 flex flex-wrap items-center gap-3"><span>Sign in as the owner (top right) to approve or decline.</span>{DEMO_ENABLED && <Link href="/demo" className="rounded-md bg-amber-400 text-zinc-900 font-medium px-3 py-1 text-xs">Start the demo instead</Link>}</Card>}
       {items === null && <div className="space-y-3">{[0, 1].map((i) => <Skeleton key={i} className="h-40" />)}</div>}
       {items && items.length === 0 && <EmptyState icon={Inbox} title="Nothing waiting for you" body="The agent pays in-policy requests by itself. Over-policy requests and screening failures show up here." />}
       <div className="space-y-3">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, ScrollText, Inbox, Wallet, Link2, Code2, CheckCircle2, ArrowUpRight, ExternalLink } from "lucide-react";
-import { get, type Stats } from "@/lib/api";
+import { get, DEMO_ENABLED, type Stats } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -40,8 +40,13 @@ export default async function Landing() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400">Open the dashboard<ArrowRight className="h-4 w-4" /></Link>
-          <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><ExternalLink className="h-4 w-4" />Source & contracts</a>
+          {DEMO_ENABLED ? (
+            <Link href="/demo" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800">Try the live demo</Link>
+          ) : (
+            <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><ExternalLink className="h-4 w-4" />Source & contracts</a>
+          )}
         </div>
+        {DEMO_ENABLED && <p className="mt-3 text-xs text-zinc-500">The demo makes you the owner of a real studio on Arc Testnet: approve or decline actual requests.</p>}
       </section>
 
       {/* product shot */}

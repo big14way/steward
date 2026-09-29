@@ -58,3 +58,11 @@ Fixes that came out of looking at it in a real browser: the scaffold's light-mod
 browser `prompt()`/`confirm()` dialogs replaced by inline forms; the API is now proxied through the dashboard origin (`/api`), so one public
 host and no CORS; icon nav, avatars, toasts, skeletons, empty states, a guided three-step add-contractor dialog with a confirm summary
 (after Safe's spending-limit flow), and an account card with the owner balance and primary actions (after Circle's escrow sample).
+
+## Demo session (replaces the judge banner)
+
+Checked Stripe (sandbox / test mode is a separate mode with a small indicator in the dashboard, never a banner over the product) and
+Sablier (an explicit "Open Example" action to explore). A persistent "you are a judge" banner told the real owner they were a judge and
+looked unfinished. Now: `/demo` starts a scoped demo session (approve/decline only), the nav shows a **Demo session** pill while it is
+active, the owner sign-in modal offers "Explore the demo instead", the landing page has "Try the live demo", and there is no banner anywhere.
+`NEXT_PUBLIC_JUDGE_MODE=true` only enables the demo entry points.

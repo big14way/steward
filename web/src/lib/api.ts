@@ -36,6 +36,9 @@ export const OWNER_KEY = "steward.owner_secret";
 export const getOwnerSecret = () => { try { return localStorage.getItem(OWNER_KEY) ?? ""; } catch { return ""; } };
 export const setOwnerSecret = (s: string) => { try { s ? localStorage.setItem(OWNER_KEY, s) : localStorage.removeItem(OWNER_KEY); } catch {} };
 export const JUDGE_SECRET = process.env.NEXT_PUBLIC_JUDGE_SECRET ?? "";
+/** Demo access (scoped approve/decline secret) is offered only when the deployment enables it. */
+export const DEMO_ENABLED = process.env.NEXT_PUBLIC_JUDGE_MODE === "true";
+export const isDemoSecret = (s: string) => !!s && !!JUDGE_SECRET && s === JUDGE_SECRET;
 
 // ---- plain English for the rules engine ----
 export const RULE_TEXT: Record<string, string> = {

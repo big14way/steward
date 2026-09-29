@@ -130,12 +130,13 @@ On hold / Blocked. No wallet, no sign-up, no gas. Their own-wallet path (`/contr
 expiry, revoke); the request/approve loop is Upwork's fixed-price milestone flow with the agent as the "approve within policy" step; the wallet-for-the-contractor
 and status pills come from Circle's `arc-escrow` reference app. Details and references: [docs/product-flow.md](docs/product-flow.md).
 
-## Judge mode
+## Demo access (for judges)
 
-Set `NEXT_PUBLIC_JUDGE_MODE=true` on the dashboard. You are the owner of **Acme Studio**. The banner's **Open approvals** button takes you to the inbox; the
-**judge secret** in the banner is scoped to approve / reject only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke). Every signature happens
-server-side through the owner's Circle Developer-Controlled wallet, so there is nothing to install: approve the pending request and watch `approveAndPay()`
-land on the explorer within about 20 seconds. Details in [docs/day7-crosschain-judge.md](docs/day7-crosschain-judge.md).
+There is no banner inside the product. Like a sandbox or test mode, a demo is something you start on purpose: open
+[steward-arc.vercel.app](https://steward-arc.vercel.app) → **Try the live demo** (or `/demo`). That starts a *demo session* in your browser
+with a scoped secret that can approve or decline requests only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke). While it is
+active a small **Demo session** pill sits in the app nav; *Exit demo* ends it. Every signature still happens server-side through the owner's
+Circle Developer-Controlled wallet, so there is nothing to install. The owner signs in with the real secret and never sees demo UI.
 
 ## Status (honest)
 
