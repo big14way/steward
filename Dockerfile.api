@@ -1,0 +1,12 @@
+# STEWARD API (FastAPI). Build context = repo root so the ABIs ship with the image.
+#   docker build -f Dockerfile.api -t steward-api .
+FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY api/requirements.txt api/requirements.txt
+RUN pip install -r api/requirements.txt
+COPY contracts/abi contracts/abi
+COPY api api
+WORKDIR /app/api
+ENV ABI_DIR=/app/contracts/abi DB_PATH=/data/steward.db PORT=8001
+CMD ["sh", "-c", "mkdir -p /data && exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001}"]

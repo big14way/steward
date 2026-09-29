@@ -598,6 +598,32 @@ def contractor_request(token: str, body: RequestIn):
     return {"id": mid, "status": "pending", "auth": auth, "evidence_hash": ev}
 
 
+@app.get("/admin/db/export", dependencies=[Depends(_owner_header_auth)])
+def admin_db_export():
+    """Owner-only: download the SQLite file (used to move the deployment between hosts)."""
+    from fastapi.responses import FileResponse
+    return FileResponse(db.DB, media_type="application/octet-stream", filename="steward.db")
+
+
+@app.post("/admin/db/import", dependencies=[Depends(_owner_header_auth)])
+async def admin_db_import(request: Request):
+    """Owner-only: replace the SQLite file with the uploaded bytes (raw body). Existing file is kept as .bak."""
+    import shutil
+    raw = await request.body()
+    if not raw.startswith(b"SQLite format 3\x00"):
+        raise HTTPException(400, "not a SQLite database")
+    if os.path.exists(db.DB):
+        shutil.copyfile(db.DB, db.DB + ".bak")
+    with open(db.DB + ".tmp", "wb") as f:
+        f.write(raw)
+    os.replace(db.DB + ".tmp", db.DB)
+    db.init()
+    with db.conn() as c:
+        n = c.execute("SELECT COUNT(*) FROM contractors").fetchone()[0]
+        m = c.execute("SELECT COUNT(*) FROM decisions").fetchone()[0]
+    return {"ok": True, "contractors": n, "decisions": m, "bytes": len(raw)}
+
+
 @app.post("/webhooks/circle")
 async def circle_webhook(request: Request):
     """Circle wallet transaction notifications. Signature verification is ported from circlefin/arc-escrow

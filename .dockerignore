@@ -1,0 +1,16 @@
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv
+**/__pycache__
+**/*.db
+**/node_modules
+web
+packages
+contracts/lib
+contracts/out
+contracts/cache
+contracts/broadcast
+docs
+scripts
+.git

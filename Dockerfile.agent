@@ -1,0 +1,13 @@
+# STEWARD agent (decide + treasury loops). Build context = repo root: needs contracts/abi and api/circle_client.py.
+#   docker build -f Dockerfile.agent -t steward-agent .
+FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY agent/requirements.txt agent/requirements.txt
+RUN pip install -r agent/requirements.txt
+COPY contracts/abi contracts/abi
+COPY api/circle_client.py api/circle_client.py
+COPY agent agent
+WORKDIR /app/agent
+ENV ABI_DIR=/app/contracts/abi
+CMD ["python", "main.py"]
