@@ -8,11 +8,11 @@ Contracts + docs: https://github.com/big14way/steward (Tameion Agents Hackathon,
 ## TypeScript
 
 ```bash
-npm i steward-sdk viem
+npm i @big14way/steward-sdk viem
 ```
 
 ```ts
-import { Steward } from "steward-sdk";
+import { Steward } from "@big14way/steward-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 
 const s = new Steward({

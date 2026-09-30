@@ -35,5 +35,5 @@ Until published, integrators can `npm i github:big14way/steward#main --workspace
 ## Discord post (Day 9)
 
 > If your Tameion agent pays anyone in USDC, put STEWARD in front of it: one contract call gives you per-payee caps + period limits +
-> expiry the agent can't exceed, an on-chain decision log, and an escalation path. `npm i steward-sdk` / `pip install steward-sdk`, 10 lines.
+> expiry the agent can't exceed, an on-chain decision log, and an escalation path. `npm i @big14way/steward-sdk` / `pip install steward-sdk`, 10 lines.
 > Repo: github.com/big14way/steward — reply here and I'll add you to the integrators list on the README.

@@ -36,3 +36,4 @@ dist/
 
 # rendered video (large); config lives in docs/video/
 docs/video/out/
+packages/steward-sdk/python/dist/
