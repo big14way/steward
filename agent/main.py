@@ -12,6 +12,8 @@ from config import API_BASE, API_SECRET, DECIDE_EVERY, LLM, RESERVE_FLOOR, SIGNA
 from decision import ACTION_CODE, DecisionInput, canonical_json, decide, decision_hash, remainder_hash
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+for _noisy in ("httpx", "httpcore", "telegram"):   # request URLs carry the bot token; keep them out of the logs
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 log = logging.getLogger("steward.agent")
 _H = {"X-Agent-Key": API_SECRET}
 
