@@ -301,11 +301,11 @@
    "cut": [
     [
      3,
-     27
+     26
     ],
     [
-     33,
-     46
+     34,
+     44.5
     ]
    ],
    "step": "02",
@@ -327,22 +327,22 @@
    "src": "pay.webm",
    "cut": [
     [
-     1.5,
+     2,
      13
     ],
     [
-     60.5,
-     72.8
+     62,
+     81
     ],
     [
-     75.5,
-     87.5
+     83,
+     94.5
     ]
    ],
    "step": "03",
    "head": "In policy: the agent pays her",
-   "sub": "Screening, evidence, caps, budget. Recorded on Arc, then paid. The transaction on Arc's explorer.",
-   "vo": "She opens her private link and asks for forty cents, with a link to the work. The agent checks screening, evidence, caps and budget, records its decision, and pays her in under a minute. There it is on Arc's explorer."
+   "sub": "Rules decide, Claude explains, the decision is recorded on Arc, then paid. The transaction on Arc's explorer.",
+   "vo": "She opens her private link and asks for forty cents for her work. The agent checks screening, evidence, caps and budget, and Claude writes the reason. The decision is recorded on Arc and she is paid in under a minute. There it is on Arc's explorer."
   },
   {
    "kind": "laptop",
@@ -358,18 +358,18 @@
    "src": "over.webm",
    "cut": [
     [
-     1.5,
+     2,
      13
     ],
     [
-     80.5,
-     92
+     109,
+     124
     ]
    ],
    "step": "04",
    "head": "Over the cap: it asks the owner",
    "sub": "0.70 USDC against a 0.50 cap. Recorded on Arc, sent to the owner.",
-   "vo": "Seventy cents is above her fifty cent cap. The agent doesn't refuse it, and doesn't pay it. It asks the owner."
+   "vo": "Seventy cents is above her fifty cent cap. The agent doesn't refuse it and doesn't pay it. It explains why, and asks the owner."
   },
   {
    "kind": "laptop",
@@ -386,7 +386,7 @@
    "cut": [
     [
      2.5,
-     23
+     20
     ]
    ],
    "step": "05",
@@ -453,7 +453,7 @@
    "cut": [
     [
      1.5,
-     31.3
+     31.4
     ]
    ],
    "step": "08",
@@ -476,7 +476,7 @@
    "cut": [
     [
      0.5,
-     24.2
+     20
     ]
    ],
    "step": "09",
@@ -546,13 +546,13 @@
    "cut": [
     [
      6,
-     21
+     22.4
     ]
    ],
    "step": "11",
    "head": "Live on Arc Testnet",
-   "sub": "7 contractors \u00b7 8.20 USDC paid \u00b7 14 decisions, each on the record.",
-   "vo": "It's live on Arc Testnet today: seven contractors, fourteen decisions, each one on the record."
+   "sub": "8 contractors \u00b7 11.15 USDC paid \u00b7 20 decisions, each on the record.",
+   "vo": "It's live on Arc Testnet today: eight contractors, twenty decisions, each one on the record."
   },
   {
    "id": "s99",

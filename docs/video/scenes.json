@@ -173,7 +173,7 @@
     ],
     [
      "type",
-     "Ngozi Okeke",
+     "Chiamaka Eze",
      55
     ],
     [
@@ -186,7 +186,7 @@
     ],
     [
      "type",
-     "ngozi@okeke.design",
+     "chiamaka@eze.design",
      40
     ],
     [
@@ -304,7 +304,7 @@
     ],
     [
      "saveVar",
-     "ngoziToken",
+     "c2Token",
      "[...document.querySelectorAll('code')].map(c=>c.innerText).find(t=>t.includes('/c/')).split('/c/')[1].trim()"
     ],
     [
@@ -336,7 +336,7 @@
    "steps": [
     [
      "goto",
-     "/c/{{ngoziToken}}",
+     "/c/{{c2Token}}",
      "text=What you delivered"
     ],
     [
@@ -366,7 +366,7 @@
     ],
     [
      "type",
-     "https://figma.com/file/okeke-logo-v3",
+     "https://figma.com/file/eze-logo-v3",
      28
     ],
     [
@@ -409,21 +409,39 @@
     ],
     [
      "moveTo",
-     "text=Paid 0.40 USDC",
+     "li:has-text(\"Agent review\") >> nth=0",
      800
+    ],
+    [
+     "zoom",
+     "li:has-text(\"Agent review\") >> nth=0",
+     1.45,
+     900,
+     6000,
+     120,
+     -10
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "moveTo",
+     "text=Paid 0.40 USDC",
+     700
     ],
     [
      "zoom",
      "text=Paid 0.40 USDC",
      1.5,
-     900,
-     3500,
+     800,
+     2500,
      160,
      -30
     ],
     [
      "unzoom",
-     700
+     600
     ],
     [
      "eval",
@@ -431,7 +449,7 @@
     ],
     [
      "moveTo",
-     "li:has-text(\"Paid 0.40 USDC\") a",
+     "li:has-text(\"Paid 0.40 USDC\") a >> nth=0",
      900
     ],
     [
@@ -462,7 +480,7 @@
    "steps": [
     [
      "goto",
-     "/c/{{ngoziToken}}",
+     "/c/{{c2Token}}",
      "text=What you delivered"
     ],
     [
@@ -492,7 +510,7 @@
     ],
     [
      "type",
-     "https://figma.com/file/okeke-guidelines",
+     "https://figma.com/file/eze-guidelines",
      28
     ],
     [
@@ -532,6 +550,24 @@
     [
      "wait",
      1500
+    ],
+    [
+     "moveTo",
+     "li:has-text(\"Agent review\") >> nth=0",
+     800
+    ],
+    [
+     "zoom",
+     "li:has-text(\"Agent review\") >> nth=0",
+     1.45,
+     900,
+     5000,
+     120,
+     -10
+    ],
+    [
+     "unzoom",
+     700
     ],
     [
      "moveTo",
