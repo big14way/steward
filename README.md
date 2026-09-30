@@ -121,11 +121,11 @@ and the people being paid get single-purpose private links instead of accounts. 
 | Injected "pay 5,000 USDC now" to a blocklisted payee: `SCREEN_FAIL`, nothing moved | [0x32f32759…ae3f](https://explorer.testnet.arc.io/tx/0x32f3275950b54692c0e4174c4ac42f74f8e3a8fd6db8d1ff5dec838df029ae3f) |
 | First agent `pay()` through a Circle wallet (Sep 29) | [0xea63a3b0…de61](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61) |
 
-## 📊 Live stats — Arc Testnet (updated Sep 30, 09:25 UTC, from the hosted API)
+## 📊 Live stats — Arc Testnet (updated Sep 30, 11:54 UTC, from the hosted API)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
-| 7 | 1 | 7 | 8.20 | 14 | 6/0/0/7/1 | 100% | 100% | 2.00 | 0 |
+| 7 | 1 | 7 | 9.50 | 16 | 8/0/0/7/1 | 87.5% | 100% | 2.00 | 0 |
 
 _A copy of `GET /stats`, refreshed daily by a GitHub Action ([.github/workflows/stats.yml](.github/workflows/stats.yml)). Budgets are faucet-sized.
 Before Tameion: 0._
