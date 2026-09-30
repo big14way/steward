@@ -200,6 +200,7 @@ const r = await s.decide({
 console.log(r.action, r.hash, r.payTx ?? r.escalateTx);
 ```
 
+Install: `npm i steward-arc-sdk viem` ([npm](https://www.npmjs.com/package/steward-arc-sdk)) · `pip install steward-sdk` ([PyPI](https://pypi.org/project/steward-sdk/)).
 Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) and [docs/day9-sdk.md](docs/day9-sdk.md).
 
 ## Arc gotchas we hit
@@ -215,10 +216,11 @@ Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) an
 | Done and proven | Still open |
 |---|---|
 | Contracts deployed; 46 contract tests, 20 agent tests, 4 SDK tests | USYC testnet allowlist (then `MockUSYC` is swapped for USYC) |
-| Hosted app with owner sign-in, demo role, contractor links | A hosted model key (reasons are rules-only today; the model path is built and tested) |
+| Hosted app with owner sign-in, demo role, contractor links | USYC allowlist requested from Circle (ticket sent Sep 30) |
 | Agent paying real contractors on Arc through Circle wallets | Telegram approvals (built; needs a bot token) |
-| CCTP payout to Base Sepolia, Gas Station relayer, signed webhooks | npm and PyPI publishing of `steward-sdk` |
+| CCTP payout to Base Sepolia, Gas Station relayer, signed webhooks | Integrators beyond our own agent |
 | Adversarial test on the live product and on a testnet fork | Two-factor sign-in and self-serve sign-up |
+| Model-written reasons (Claude Sonnet 5.5) on the hosted agent; SDK published to [npm](https://www.npmjs.com/package/steward-arc-sdk) and [PyPI](https://pypi.org/project/steward-sdk/) | |
 
 ## Run locally
 

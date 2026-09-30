@@ -24,7 +24,9 @@ package's `decision_hash` / `remainder_hash` for the same record. Sorted keys + 
 | Python | `decide(50 USDC)` · `decide(350 USDC)` · `decide(10 USDC, evidence=False)` | PAY (record + pay tx, `usedDecision[hash]` true, hash re-derives from `record`) · ESCALATE (R3) · HOLD (record only) |
 | TypeScript | `decide(30 USDC)` · `decide(150 USDC, floor 100, obligations 300)` | PAY · PARTIAL (pays the liquid part, escalates the rest under the remainder hash) |
 
-## Publishing (builder, needs npm + PyPI accounts)
+## Publishing
+
+Published Sep 30, 2026: npm [`steward-arc-sdk` 0.1.0](https://www.npmjs.com/package/steward-arc-sdk) (the name `steward-sdk` was already taken on npm) and PyPI [`steward-sdk` 0.1.0](https://pypi.org/project/steward-sdk/). Release commands:
 
 ```bash
 cd packages/steward-sdk && npm run build && npm test && npm publish --access public
