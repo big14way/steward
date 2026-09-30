@@ -74,6 +74,17 @@ def apply_rules(i: DecisionInput) -> tuple[str, Action, int, int]:
     return "R5_pay", "PAY", i.requested, 0
 
 
+_USDC_FIELDS = ("requested", "per_tx_cap", "period_cap", "spent_this_period", "funded", "reserve_floor", "obligations_next_7d")
+
+
+def _inputs_for_model(i: DecisionInput) -> dict:
+    """The decision inputs with 6-decimal integer amounts shown as USDC, so the model never misreads units."""
+    d = asdict(i)
+    for k in _USDC_FIELDS:
+        d[k] = f"{d[k] / 1e6:.2f} USDC"
+    return d
+
+
 def llm_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder: int) -> Optional[dict]:
     """Returns a dict matching REASON_SCHEMA or None (caller falls back to a rules-only reason)."""
     from llm import complete_json
@@ -83,7 +94,9 @@ def llm_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder:
         "Write a concise reason a human auditor would accept, and choose timing: 'now' or 'batch_friday' "
         "(batch only if paying now would leave less than 20% headroom of period cap and the payee streak >= 3).\n"
         f"Decision: rule={rule} action={action} amount={amount/1e6:.2f} remainder={remainder/1e6:.2f} USDC\n"
-        f"Inputs: {json.dumps(asdict(i))}\n"
+        f"Inputs (USDC amounts already converted): {json.dumps(_inputs_for_model(i))}\n"
+        "Write one or two plain sentences for the business owner and the contractor: what was requested, why this outcome, "
+        "with amounts in USDC. No rule codes, no field names.\n"
         'Return JSON only: {"reason": "...", "timing": "now"|"batch_friday"}'
     )
     out = complete_json(prompt)

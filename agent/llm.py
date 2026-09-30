@@ -16,10 +16,18 @@ def complete_json(prompt: str) -> dict | None:
             return json.loads(r.choices[0].message.content)
         if LLM == "anthropic":
             import anthropic
-            r = anthropic.Anthropic().messages.create(
-                model=os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"), max_tokens=300,
-                messages=[{"role": "user", "content": prompt}])
-            txt = r.content[0].text
+            client, model = anthropic.Anthropic(), os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+            # A one-paragraph reason needs no thinking budget. Most models take {"type": "disabled"}; newer ones ask for
+            # {"type": "between_tools"} instead, so retry with that when the API says so.
+            try:
+                r = client.messages.create(model=model, max_tokens=400, thinking={"type": "disabled"},
+                                           messages=[{"role": "user", "content": prompt}])
+            except anthropic.BadRequestError as e:
+                if "between_tools" not in str(e):
+                    raise
+                r = client.messages.create(model=model, max_tokens=400, thinking={"type": "between_tools"},
+                                           messages=[{"role": "user", "content": prompt}])
+            txt = next(b.text for b in r.content if getattr(b, "type", "") == "text")   # skip thinking blocks
             return json.loads(txt[txt.find("{"): txt.rfind("}") + 1])
     except Exception:
         return None
