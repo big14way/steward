@@ -95,11 +95,15 @@ def llm_reason(i: DecisionInput, rule: str, action: str, amount: int, remainder:
         "(batch only if paying now would leave less than 20% headroom of period cap and the payee streak >= 3).\n"
         f"Decision: rule={rule} action={action} amount={amount/1e6:.2f} remainder={remainder/1e6:.2f} USDC\n"
         f"Inputs (USDC amounts already converted): {json.dumps(_inputs_for_model(i))}\n"
-        "Write one or two plain sentences for the business owner and the contractor: what was requested, why this outcome, "
-        "with amounts in USDC. No rule codes, no field names.\n"
+        "Write at most two short, plain sentences (under 250 characters in total) for the business owner and the contractor: "
+        "what was requested and why this outcome, with amounts in USDC. No rule codes, no field names.\n"
         'Return JSON only: {"reason": "...", "timing": "now"|"batch_friday"}'
     )
     out = complete_json(prompt)
+    if isinstance(out, dict) and isinstance(out.get("reason"), str) and len(out["reason"]) > 400:
+        cut = out["reason"][:400]                        # keep whole sentences rather than discard a long reason
+        end = cut.rfind(". ")
+        out["reason"] = cut[: end + 1] if end > 60 else cut[:397].rstrip() + "…"
     try:
         validate(out, REASON_SCHEMA)
         return out
