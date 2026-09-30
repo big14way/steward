@@ -17,7 +17,7 @@ def complete_json(prompt: str) -> dict | None:
         if LLM == "anthropic":
             import anthropic
             r = anthropic.Anthropic().messages.create(
-                model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5"), max_tokens=300,
+                model=os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"), max_tokens=300,
                 messages=[{"role": "user", "content": prompt}])
             txt = r.content[0].text
             return json.loads(txt[txt.find("{"): txt.rfind("}") + 1])
