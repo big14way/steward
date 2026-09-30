@@ -40,12 +40,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
               <div className="text-zinc-300 font-sans text-sm mb-2">{x.reason}</div>
               <div className="font-sans text-[11px] uppercase tracking-wide text-zinc-500 mt-1 mb-1">Where it happened on-chain</div>
               <ol className="font-sans space-y-1.5 mb-3">
-                {x.record_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Decision recorded · AuditLog.record()</span><TxLink hash={x.record_tx} /></li>}
-                {x.pay_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Paid by the agent · pay()</span><TxLink hash={x.pay_tx} /></li>}
-                {x.escalate_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Sent to the owner · escalate()</span><TxLink hash={x.escalate_tx} /></li>}
-                {x.approved_tx && !x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Owner approved · approveAndPay()</span><TxLink hash={x.approved_tx} /></li>}
-                {x.approved_tx && x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Burned by CCTP · depositForBurn()</span><TxLink hash={x.approved_tx} /></li>}
-                {x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Minted to the contractor · receiveMessage()</span><TxLink hash={x.mint_tx} chain="base-sepolia" /></li>}
+                {x.record_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Decision recorded · AuditLog.record()</span><TxLink hash={x.record_tx} /></li>}
+                {x.pay_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Paid by the agent · pay()</span><TxLink hash={x.pay_tx} /></li>}
+                {x.escalate_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Sent to the owner · escalate()</span><TxLink hash={x.escalate_tx} /></li>}
+                {x.approved_tx && !x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Owner approved · approveAndPay()</span><TxLink hash={x.approved_tx} /></li>}
+                {x.approved_tx && x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Burned by CCTP · depositForBurn()</span><TxLink hash={x.approved_tx} /></li>}
+                {x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="sm:w-72 shrink-0 text-zinc-400 sm:whitespace-nowrap">Minted to the contractor · receiveMessage()</span><TxLink hash={x.mint_tx} chain="base-sepolia" /></li>}
               </ol>
               <div>decision hash {x.hash}</div>
               {x.escalation_hash && x.escalation_hash !== x.hash && <div>remainder hash {x.escalation_hash}</div>}
