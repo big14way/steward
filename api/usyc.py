@@ -26,8 +26,21 @@ def position(w3, owner: str) -> dict:
     teller = w3.eth.contract(address=Web3.to_checksum_address(TELLER), abi=TELLER_ABI)
     shares = w3.eth.contract(address=Web3.to_checksum_address(USYC), abi=BAL_ABI).functions.balanceOf(owner).call()
     price = teller.functions.previewRedeem(1_000_000).call()
+    price_ok = PRICE_MIN <= price <= PRICE_MAX
     return {"teller": TELLER, "token": USYC, "shares": shares, "value": teller.functions.previewRedeem(shares).call() if shares else 0,
-            "price": price, "allowlisted": allowlisted(w3, owner)}
+            "price": price, "price_ok": price_ok, "allowlisted": allowlisted(w3, owner)}
+
+
+# USYC is a money-market fund token priced a little above 1 USDC. If the testnet oracle reports something far outside that,
+# moving money in or out would lose (or wrongly gain) almost all of it, so STEWARD pauses USYC until the price is sane.
+PRICE_MIN, PRICE_MAX = 900_000, 2_000_000   # 0.90 to 2.00 USDC per USYC
+
+
+def price_guard(pos: dict):
+    from fastapi import HTTPException
+    if not pos.get("price_ok", True):
+        raise HTTPException(409, f"USYC's testnet price feed reads {pos['price'] / 1e6:.2f} USDC per USYC, far from its normal ~1.1. "
+                                 "Moving money in or out now would be mispriced, so USYC is paused until the price is back in range.")
 
 
 def allowlisted(w3, account: str) -> bool:

@@ -109,7 +109,7 @@ export type Milestone = {
   auth?: string | null; decision?: (Partial<Decision> & { created_at: number }) | null;
 };
 export type TreasuryEvent = { id: number; action: string; assets: number; shares: number; tx: string; hash?: string; record_tx?: string | null; created_at: number };
-export type Usyc = { teller: string; token: string; shares: number; value: number; price: number; allowlisted: boolean };
+export type Usyc = { teller: string; token: string; shares: number; value: number; price: number; price_ok?: boolean; allowlisted: boolean };
 export type Treasury = {
   usyc?: Usyc;
   events: TreasuryEvent[]; sweeper?: string | null; vault?: string; balance?: number; floor?: number; shares?: number; position_assets?: number; error?: string;

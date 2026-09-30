@@ -43,7 +43,8 @@ export default function Page() {
             <Stat label="Worth now" value={<>{usd(t.usyc.value)} <span className="text-sm text-zinc-500">USDC</span></>} />
             <Stat label="Price" value={<>{(t.usyc.price / 1e6).toFixed(4)} <span className="text-sm text-zinc-500">USDC per USYC</span></>} />
           </div>
-          {secret && t.usyc.allowlisted && (
+          {t.usyc.price_ok === false && <p className="mt-3 text-xs text-amber-300">USYC's testnet price feed reads {(t.usyc.price / 1e6).toFixed(2)} USDC per USYC, far from its normal ~1.1, so the value above is not meaningful. Moving money in or out is paused until the price is back in range.</p>}
+          {secret && t.usyc.allowlisted && t.usyc.price_ok !== false && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <input type="number" className={`${inputCls} w-32`} placeholder="5" value={uAmt} onChange={(e) => setUAmt(e.target.value)} />
               <Button disabled={!!uBusy || !(+uAmt > 0)} onClick={usycIn}>{uBusy === "in" ? "Moving… (~20 s)" : "Move USDC into USYC"}</Button>

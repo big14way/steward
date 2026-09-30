@@ -42,7 +42,7 @@ export default function WalletCard({ token, w, payer, onChange }: { token: strin
       <div className="grid grid-cols-3 gap-3">
         <div><div className="text-xs text-zinc-500">balance</div><div className="text-xl font-semibold tabular-nums">{usd(w.balance)} <span className="text-sm text-zinc-500 font-normal">USDC</span></div></div>
         <div><div className="text-xs text-zinc-500">you can send</div><div className="text-xl font-semibold tabular-nums">{usd(w.available)}</div><div className="text-[11px] text-zinc-600">{usd(w.fee_reserve)} stays for the network fee</div></div>
-        <div><div className="text-xs text-zinc-500">earning in USYC</div><div className="text-xl font-semibold tabular-nums">{w.usyc ? usd(w.usyc.value) : "0.00"}</div><div className="text-[11px] text-zinc-600">{w.usyc?.shares ? `${(w.usyc.shares / 1e6).toFixed(4)} USYC` : "nothing yet"}</div></div>
+        <div><div className="text-xs text-zinc-500">earning in USYC</div><div className="text-xl font-semibold tabular-nums">{w.usyc && w.usyc.price_ok !== false ? usd(w.usyc.value) : "0.00"}</div><div className="text-[11px] text-zinc-600">{w.usyc?.shares ? `${(w.usyc.shares / 1e6).toFixed(4)} USYC` : "nothing yet"}</div></div>
       </div>
 
       <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4 space-y-3">
@@ -68,7 +68,9 @@ export default function WalletCard({ token, w, payer, onChange }: { token: strin
         <div className="flex flex-wrap items-center gap-2 text-sm font-medium"><TrendingUp className="h-4 w-4 text-emerald-400" />Earn yield while you wait
           <Pill tone={w.usyc?.allowlisted ? "emerald" : "zinc"}>{w.usyc?.allowlisted ? "USYC available" : "Needs Circle allowlisting"}</Pill>
         </div>
-        {w.usyc?.allowlisted ? (
+        {w.usyc?.price_ok === false ? (
+          <p className="text-xs text-amber-300">USYC's testnet price feed is out of range right now ({(w.usyc.price / 1e6).toFixed(2)} USDC per USYC instead of about 1.1), so moving money in or out is paused. Your USDC is safe where it is.</p>
+        ) : w.usyc?.allowlisted ? (
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" disabled={!!busy || w.available <= 0} onClick={() => earn(false)}>{busy === "earn" ? "Moving…" : amount ? `Move ${amount} USDC into USYC` : "Move my balance into USYC"}</Button>
             <Button variant="secondary" disabled={!!busy || !w.usyc?.shares} onClick={() => earn(true)}>{busy === "redeem" ? "Redeeming…" : "Bring it back to USDC"}</Button>

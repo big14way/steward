@@ -605,6 +605,7 @@ def usyc_deposit(body: UsycIn, request: Request):
     pos0 = usyc.position(w3, owner_addr)
     if not pos0["allowlisted"]:
         raise HTTPException(403, "USYC needs Circle to allowlist your wallet first.")
+    usyc.price_guard(pos0)
     before = pos0["shares"]
     r = usyc.deposit(wallet_id or os.environ["OWNER_WALLET_ID"], owner_addr, body.amount)
     if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
@@ -622,6 +623,7 @@ def usyc_redeem(body: UsycIn, request: Request):
     wallet_id, owner_addr = _wallet(p)
     import usyc
     pos = usyc.position(w3, owner_addr)
+    usyc.price_guard(pos)
     shares = pos["shares"] if body.all else body.shares
     if shares <= 0 or shares > pos["shares"]:
         raise HTTPException(400, f"You hold {pos['shares'] / 1e6:.6f} USYC.")
@@ -933,6 +935,7 @@ def contractor_earn(token: str, body: EarnIn):
         raise HTTPException(400, "Yield is available for wallets STEWARD manages for you.")
     import usyc
     pos = usyc.position(w3, row["address"])
+    usyc.price_guard(pos)
     if not pos["allowlisted"] and not body.redeem_all:
         raise HTTPException(403, "USYC is permissioned: Circle has to allowlist your wallet first.")
     try:
