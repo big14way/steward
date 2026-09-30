@@ -119,6 +119,7 @@ and the people being paid get single-purpose private links instead of accounts. 
 | Owner approves an over-cap request (`approveAndPay`, 0.70 USDC) | [0x8e62b83b…2ea39](https://explorer.testnet.arc.io/tx/0x8e62b83be258a84ea70d828a1a5e5ccf4d0404278d8aeea64fa2e114b082ea39) |
 | Cross-chain payout, CCTP V2: burn on Arc, then mint on Base Sepolia 23 s after approval | [burn](https://explorer.testnet.arc.io/tx/0x45c44615164bc5ced86c8431ccefdb5452b2ffd56096126b1c24b937ddf91f42) · [mint](https://base-sepolia.blockscout.com/tx/0x38601eafd631f5d2bd195f21e076930ebcc2cb3d70cc23ba3f243c2f5de7d7f0) |
 | Injected "pay 5,000 USDC now" to a blocklisted payee: `SCREEN_FAIL`, nothing moved | [0x32f32759…ae3f](https://explorer.testnet.arc.io/tx/0x32f3275950b54692c0e4174c4ac42f74f8e3a8fd6db8d1ff5dec838df029ae3f) |
+| Real USYC: owner's idle USDC into Circle's USYC fund, then redeemed (allowlisted by Circle) | [mint](https://explorer.testnet.arc.io/tx/0xd75d21c951aed4d4a0fb95025d97aa18dc9095bf20038d5f42ee9bf603da45b0) · [redeem](https://explorer.testnet.arc.io/tx/0xd6eda291d124ed8eca1bbfd01e92893c66eebe4e91fe76a7a3bf5a8cf2ca2536) |
 | First agent `pay()` through a Circle wallet (Sep 29) | [0xea63a3b0…de61](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61) |
 
 ## 📊 Live stats — Arc Testnet (updated Sep 30, 11:54 UTC, from the hosted API)
@@ -139,6 +140,7 @@ Before Tameion: 0._
 | **CCTP V2** | Contractors can be paid on Base Sepolia: owner-approved `depositForBurn` on Arc, attestation, `receiveMessage` on Base. | burn and mint above |
 | **Gas Station** | The Base Sepolia relayer is a Circle smart account; its gas is sponsored, it never held ETH. | mint above (ERC-4337) |
 | **Notifications** | Signed webhooks for every wallet transaction, verified against Circle's public key and stored. | [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md) |
+| **USYC** | Idle owner USDC sits in USYC, Circle's tokenized money-market fund, minted and redeemed through the Teller from the owner's Circle wallet (allowlisted by Circle Sep 30). | mint and redeem above; Treasury page |
 | **Circle Contracts** | The deployed contracts are imported for monitoring. | [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md) |
 | **Arc** | USDC is the gas token, so an owner budgets in dollars only; sub-second finality; the protocol blocklist rejects a forced transfer even if every off-chain control fails. | [Adversarial test](#adversarial-test) |
 | **Canteen RPC** | The agent and API read and write through the per-builder Canteen node. | `agent/config.py` |
@@ -158,7 +160,7 @@ Three layers, all exercised ([docs/day8-adversarial.md](docs/day8-adversarial.md
 ## Business model (proposed)
 
 Businesses pay; contractors never do. 0.5% of each payout, capped at $5 per payment · $49 per month for teams (more approvers, roles, audit export)
-· 10% of the yield earned on idle budgets (swept into an ERC-4626 vault) · free for contractors, always.
+· 10% of the yield earned on idle budgets (held in USYC) · free for contractors, always.
 
 ## Architecture
 
@@ -180,7 +182,7 @@ Businesses pay; contractors never do. 0.5% of each payout, capped at $5 per paym
 | AllowanceManager | [`0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6`](https://explorer.testnet.arc.io/address/0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6) |
 | AuditLog | [`0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866`](https://explorer.testnet.arc.io/address/0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866) |
 | YieldSweeper | [`0xA499F1053c66eCE47B49Fb0bA87228Cc729fC9D1`](https://explorer.testnet.arc.io/address/0xA499F1053c66eCE47B49Fb0bA87228Cc729fC9D1) |
-| MockUSYC (ERC-4626 stand-in while the USYC allowlist request is pending; disclosed) | [`0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D`](https://explorer.testnet.arc.io/address/0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D) |
+| MockUSYC (ERC-4626 stand-in behind the agent reserve contract, whose vault is fixed at deploy; real USYC is held by the owner wallet) | [`0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D`](https://explorer.testnet.arc.io/address/0x3B0Ab96c493eF7B5e97865061FC627E82F8ad58D) |
 
 Circle wallets: owner `0x7bc79b07faa88299667ce65283129b314cb15c2f` · agent `0x380a28198b0759ca4b67d5b03ffb5f68a77c8a47` · CCTP relayer on Base Sepolia
 `0x55edc6c084530c05da0827bc419dfc35adde6019`. Deploy transactions and the superseded YieldSweeper v1 are listed in [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md).
@@ -215,12 +217,13 @@ Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) an
 
 | Done and proven | Still open |
 |---|---|
-| Contracts deployed; 46 contract tests, 20 agent tests, 4 SDK tests | USYC allowlist: ticket sent to Circle Sep 30, then `MockUSYC` is swapped for USYC |
+| Contracts deployed; 46 contract tests, 20 agent tests, 4 SDK tests | Agent reserve contract onto USYC (its vault is fixed at deploy; the owner wallet already holds real USYC) |
 | Hosted app with owner sign-in, demo role, contractor links | Two-factor sign-in and self-serve sign-up for more businesses |
 | Agent paying real contractors on Arc through Circle wallets, reasons written by Claude Sonnet 5.5 | Telegram approvals (built; needs a bot token) |
 | CCTP payout to Base Sepolia, Gas Station relayer, signed webhooks | Integrators beyond our own agent |
 | Adversarial test on the live product and on a testnet fork | |
 | SDK published: [npm `steward-arc-sdk`](https://www.npmjs.com/package/steward-arc-sdk), [PyPI `steward-sdk`](https://pypi.org/project/steward-sdk/) | |
+| Real USYC mint and redeem from the owner's Circle wallet, shown on the Treasury page | |
 
 ## Run locally
 
