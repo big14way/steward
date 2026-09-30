@@ -53,7 +53,7 @@ export default function Page() {
         </Card>
       )}
       {t === null && <div className="grid grid-cols-3 gap-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div>}
-      {t && !t.sweeper && <EmptyState icon={Landmark} title="No treasury configured" body="Set YIELD_SWEEPER on the API to enable sweeps." />}
+      {t && !t.sweeper && <EmptyState icon={Landmark} title="Your yield reserve isn't set up yet" body={t.usyc && !t.usyc.allowlisted ? "USYC is permissioned: Circle allowlists wallets on request. Open a ticket with Circle Support that includes your owner wallet address (Overview page), and this page lets you move idle USDC into USYC once it's approved." : "Idle USDC can earn in USYC from this page."} />}
       {t?.sweeper && (
         <>
           <div className="grid grid-cols-3 gap-3">

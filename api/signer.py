@@ -59,41 +59,41 @@ def owner_address() -> str:
     return os.environ["OWNER_ADDRESS"]
 
 
-def owner_create(agent_addr: str, payee: str, cap_period: int, per_tx: int, period: int, expiry: int) -> dict:
+def owner_create(agent_addr: str, payee: str, cap_period: int, per_tx: int, period: int, expiry: int, wallet_id: str | None = None) -> dict:
     if OWNER_SIGNER == "circle":
         import circle_client as cc
-        return cc.owner_create(agent_addr, payee, cap_period, per_tx, period, expiry)
+        return cc.owner_create(agent_addr, payee, cap_period, per_tx, period, expiry, wallet_id)
     return _send_local(_am().functions.create(Web3.to_checksum_address(agent_addr), Web3.to_checksum_address(payee), cap_period, per_tx, period, expiry))
 
 
-def owner_fund(allowance_id: int, amount: int) -> dict:
+def owner_fund(allowance_id: int, amount: int, wallet_id: str | None = None) -> dict:
     if OWNER_SIGNER == "circle":
         import circle_client as cc
-        cc.owner_approve_usdc(amount)
-        return cc.owner_fund(allowance_id, amount)
+        cc.owner_approve_usdc(amount, wallet_id)
+        return cc.owner_fund(allowance_id, amount, wallet_id)
     usdc = w3.eth.contract(address=Web3.to_checksum_address(USDC), abi=ERC20_MIN)
     _send_local(usdc.functions.approve(Web3.to_checksum_address(os.environ["ALLOWANCE_MANAGER"]), amount))
     return _send_local(_am().functions.fund(allowance_id, amount))
 
 
-def owner_approve_and_pay(allowance_id: int, amount: int, decision_hash_hex: str) -> dict:
+def owner_approve_and_pay(allowance_id: int, amount: int, decision_hash_hex: str, wallet_id: str | None = None) -> dict:
     if OWNER_SIGNER == "circle":
         import circle_client as cc
-        return cc.owner_approve_and_pay(allowance_id, amount, decision_hash_hex)
+        return cc.owner_approve_and_pay(allowance_id, amount, decision_hash_hex, wallet_id)
     return _send_local(_am().functions.approveAndPay(allowance_id, amount, bytes.fromhex(decision_hash_hex.removeprefix("0x"))))
 
 
-def owner_transfer_usdc(to: str, amount: int) -> dict:
+def owner_transfer_usdc(to: str, amount: int, wallet_id: str | None = None) -> dict:
     """Move USDC from the owner wallet to `to` (e.g. top up the YieldSweeper reserve)."""
     if OWNER_SIGNER == "circle":
         import circle_client as cc
-        return cc.owner_transfer_usdc(to, amount)
+        return cc.owner_transfer_usdc(to, amount, wallet_id)
     usdc = w3.eth.contract(address=Web3.to_checksum_address(USDC), abi=ERC20_MIN)
     return _send_local(usdc.functions.transfer(Web3.to_checksum_address(to), amount))
 
 
-def owner_revoke(allowance_id: int) -> dict:
+def owner_revoke(allowance_id: int, wallet_id: str | None = None) -> dict:
     if OWNER_SIGNER == "circle":
         import circle_client as cc
-        return cc.owner_revoke(allowance_id)
+        return cc.owner_revoke(allowance_id, wallet_id)
     return _send_local(_am().functions.revoke(allowance_id))

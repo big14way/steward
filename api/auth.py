@@ -43,6 +43,16 @@ def init() -> None:
         c.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE, name TEXT, workspace TEXT,"
                   " pw_hash TEXT, role TEXT, created_at INT)")
         c.execute("CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id INT, expires_at INT, created_at INT)")
+        # Each business is a workspace with its own Circle owner wallet. Workspace 1 is the launch workspace (env owner wallet).
+        c.execute("CREATE TABLE IF NOT EXISTS workspaces(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, owner_wallet_id TEXT,"
+                  " owner_address TEXT, created_at INT)")
+        if not c.execute("SELECT 1 FROM workspaces WHERE id=1").fetchone():
+            c.execute("INSERT INTO workspaces(id,name,owner_wallet_id,owner_address,created_at) VALUES(1,?,?,?,?)",
+                      (os.getenv("WORKSPACE_NAME", "Acme Studio"), os.getenv("OWNER_WALLET_ID", ""), os.getenv("OWNER_ADDRESS", ""), int(time.time())))
+        for table in ("users", "contractors"):
+            cols = {r[1] for r in c.execute(f"PRAGMA table_info({table})")}
+            if cols and "workspace_id" not in cols:
+                c.execute(f"ALTER TABLE {table} ADD COLUMN workspace_id INT DEFAULT 1")
         email, pw = os.getenv("OWNER_EMAIL", "").strip().lower(), os.getenv("OWNER_PASSWORD", "")
         ws = os.getenv("WORKSPACE_NAME", "Acme Studio")
         if email and pw:
@@ -68,7 +78,44 @@ def _limit(key: str) -> None:
 
 
 def _public(u) -> dict:
-    return {"email": u["email"], "name": u["name"], "workspace": u["workspace"], "role": u["role"]}
+    return {"email": u["email"], "name": u["name"], "workspace": u["workspace"], "role": u["role"],
+            "workspace_id": u["workspace_id"] if "workspace_id" in u.keys() else 1}
+
+
+def workspace(ws_id: int | None) -> dict:
+    """The workspace a caller acts for; machine callers (ws_id None) act for the launch workspace."""
+    with db.conn() as c:
+        w = c.execute("SELECT * FROM workspaces WHERE id=?", (ws_id or 1,)).fetchone()
+    if not w:
+        raise HTTPException(404, "workspace not found")
+    return dict(w)
+
+
+def signup(response: Response, request: Request, name: str, business: str, email: str, password: str, create_wallet) -> dict:
+    """New business: a workspace with its own Circle owner wallet, an owner account, and a session."""
+    email, name, business = email.strip().lower(), name.strip(), business.strip()
+    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0]
+    _limit("signup:" + ip)
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(400, "Enter a valid work email.")
+    if len(password) < 10:
+        raise HTTPException(400, "Use a password of at least 10 characters.")
+    if not business or not name:
+        raise HTTPException(400, "Enter your name and your business name.")
+    with db.conn() as c:
+        if c.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
+            raise HTTPException(409, "An account with that email already exists. Sign in instead.")
+    wallet_id, address = create_wallet(f"{business} owner")
+    with db.conn() as c:
+        cur = c.execute("INSERT INTO workspaces(name,owner_wallet_id,owner_address,created_at) VALUES(?,?,?,?)",
+                        (business[:80], wallet_id, address, int(time.time())))
+        ws_id = cur.lastrowid
+        cur = c.execute("INSERT INTO users(email,name,workspace,pw_hash,role,created_at,workspace_id) VALUES(?,?,?,?,?,?,?)",
+                        (email, name[:80], business[:80], hash_password(password), "owner", int(time.time()), ws_id))
+        uid = cur.lastrowid
+        u = c.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    start_session(response, request, uid)
+    return _public(u)
 
 
 def start_session(response: Response, request: Request, user_id: int) -> None:
@@ -127,9 +174,9 @@ def principal(request: Request, secret: str = "") -> dict | None:
     api_secret, judge = os.environ.get("API_SECRET", ""), os.environ.get("JUDGE_SECRET", "")
     for s in (secret, request.headers.get("x-owner-secret", ""), request.headers.get("x-agent-key", "")):
         if api_secret and s and hmac.compare_digest(s, api_secret):
-            return {"email": "api", "name": "API", "workspace": "", "role": "owner"}
+            return {"email": "api", "name": "API", "workspace": "", "role": "owner", "workspace_id": None}
         if judge and s and hmac.compare_digest(s, judge):
-            return {"email": DEMO_EMAIL, "name": "Demo visitor", "workspace": "", "role": "demo"}
+            return {"email": DEMO_EMAIL, "name": "Demo visitor", "workspace": "", "role": "demo", "workspace_id": 1}
     return None
 
 

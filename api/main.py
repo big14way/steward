@@ -46,6 +46,40 @@ def viewer(request: Request):
     return auth.need(request, roles=("owner", "demo"))
 
 
+def _scope(p: dict) -> set[int] | None:
+    """Allowance ids a caller may see. None = everything (machine callers). The launch workspace (1) also owns the
+    allowances created before workspaces existed, i.e. every allowance that no other workspace's contractor uses."""
+    ws = p.get("workspace_id")
+    if ws is None:
+        return None
+    with db.conn() as c:
+        if ws != 1:
+            return {r[0] for r in c.execute("SELECT allowance_id FROM contractors WHERE workspace_id=?", (ws,))}
+        others = {r[0] for r in c.execute("SELECT allowance_id FROM contractors WHERE COALESCE(workspace_id,1)<>1")}
+    return set(range(AM.functions.nextId().call())) - others
+
+
+def _in(ids: set[int] | None) -> tuple[str, list]:
+    """SQL fragment restricting allowance_id to `ids` (no restriction for machine callers)."""
+    if ids is None:
+        return "", []
+    return (f" AND allowance_id IN ({','.join('?' * len(ids))})", sorted(ids)) if ids else (" AND 0", [])
+
+
+def _wallet(p: dict) -> tuple[str | None, str]:
+    """(Circle wallet id, address) that signs owner actions for the caller's workspace. None wallet = the env owner wallet."""
+    w = auth.workspace(p.get("workspace_id"))
+    if w["id"] == 1:
+        return None, w["owner_address"] or signer.owner_address()
+    return w["owner_wallet_id"], w["owner_address"]
+
+
+def _check(p: dict, allowance_id: int):
+    ids = _scope(p)
+    if ids is not None and allowance_id not in ids:
+        raise HTTPException(404, "not found")
+
+
 # ---- EIP-712 milestone typed data (contractor signs in browser or CLI; server verifies) ----
 DOMAIN = {"name": "STEWARD", "version": "1", "chainId": CHAIN_ID, "verifyingContract": AM_ADDR}
 TYPES = {"Milestone": [{"name": "allowanceId", "type": "uint256"}, {"name": "title", "type": "string"},
@@ -62,23 +96,27 @@ def _allowance(id: int) -> dict:
     return dict(zip(KEYS, AM.functions.allowances(id).call()))
 
 
-@app.get("/account", dependencies=[Depends(viewer)])
-def account():
-    """Owner account card: USDC balances of the owner wallet, the agent wallet (gas), and what is locked in budgets + reserve."""
+@app.get("/account")
+def account(p: dict = Depends(viewer)):
+    """Owner account card: USDC balances of the workspace's owner wallet, the agent wallet (gas), and what is locked in budgets + reserve."""
     usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
-    owner = signer.owner_address()
+    ws = auth.workspace(p.get("workspace_id"))
+    _, owner = _wallet(p)
     agent = os.environ.get("AGENT_ADDRESS")
-    n = AM.functions.nextId().call()
-    funded = sum(_allowance(i)["funded"] for i in range(n))
+    ids = _scope(p)
+    ids = sorted(ids) if ids is not None else list(range(AM.functions.nextId().call()))
+    funded = sum(_allowance(i)["funded"] for i in ids)
+    n = len(ids)
     reserve = None
-    if os.environ.get("YIELD_SWEEPER"):
+    if os.environ.get("YIELD_SWEEPER") and ws["id"] == 1:
         try:
             reserve = usdc.functions.balanceOf(Web3.to_checksum_address(os.environ["YIELD_SWEEPER"])).call()
         except Exception:
             reserve = None
     return {"owner": owner, "owner_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(owner)).call(),
             "agent": agent, "agent_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(agent)).call() if agent else None,
-            "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": PAYER_NAME, "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
+            "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": ws["name"], "workspace_id": ws["id"],
+            "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
 
 
 class LoginIn(BaseModel):
@@ -89,6 +127,22 @@ class LoginIn(BaseModel):
 @app.post("/auth/login")
 def auth_login(body: LoginIn, request: Request, response: Response):
     return auth.login(response, request, body.email, body.password)
+
+
+class SignupIn(BaseModel):
+    name: str
+    business: str
+    email: str
+    password: str
+
+
+@app.post("/auth/signup")
+def auth_signup(body: SignupIn, request: Request, response: Response):
+    """A new business gets a workspace, its own Circle owner wallet on Arc, and a session."""
+    if not os.environ.get("CIRCLE_WALLET_SET_ID"):
+        raise HTTPException(503, "Sign-up needs Circle wallets configured on this deployment.")
+    return auth.signup(response, request, body.name, body.business, body.email, body.password,
+                       lambda label: _create_circle_wallet(label, kind="owner"))
 
 
 @app.post("/auth/demo")
@@ -153,9 +207,11 @@ def submit_milestone(m: MilestoneIn):
     return {"id": mid, "status": "pending", "payee": payee, "evidence_hash": ev, "payout_chain": m.payout_chain}
 
 
-@app.get("/milestones", dependencies=[Depends(viewer)])
-def list_milestones(allowance_id: int | None = None, payee: str | None = None, status: str | None = None, limit: int = 200):
-    q, args = "SELECT * FROM milestones WHERE 1=1", []
+@app.get("/milestones")
+def list_milestones(allowance_id: int | None = None, payee: str | None = None, status: str | None = None, limit: int = 200,
+                    p: dict = Depends(viewer)):
+    frag, args = _in(_scope(p))
+    q = "SELECT * FROM milestones WHERE 1=1" + frag
     if allowance_id is not None:
         q += " AND allowance_id=?"; args.append(allowance_id)
     if payee:
@@ -230,9 +286,10 @@ def save_decision(d: DecisionIn):
     return {"ok": True}
 
 
-@app.get("/decisions", dependencies=[Depends(viewer)])
-def list_decisions(allowance_id: int | None = None, action: str | None = None, limit: int = 100):
-    q, args = "SELECT * FROM decisions WHERE 1=1", []
+@app.get("/decisions")
+def list_decisions(allowance_id: int | None = None, action: str | None = None, limit: int = 100, p: dict = Depends(viewer)):
+    frag, args = _in(_scope(p))
+    q = "SELECT * FROM decisions WHERE 1=1" + frag
     if allowance_id is not None:
         q += " AND allowance_id=?"; args.append(allowance_id)
     if action:
@@ -242,22 +299,25 @@ def list_decisions(allowance_id: int | None = None, action: str | None = None, l
         return [dict(r) for r in c.execute(q, args)]
 
 
-@app.get("/decisions/{hash}", dependencies=[Depends(viewer)])
-def get_decision(hash: str):
+@app.get("/decisions/{hash}")
+def get_decision(hash: str, p: dict = Depends(viewer)):
     with db.conn() as c:
         d = c.execute("SELECT * FROM decisions WHERE hash=?", (hash,)).fetchone()
     if not d:
         raise HTTPException(404)
+    _check(p, d["allowance_id"])
     out = dict(d)
     out["replay"] = {"canonical": out["canonical"], "keccak256": "0x" + Web3.keccak(text=out["canonical"]).hex().removeprefix("0x"),
                      "matches": ("0x" + Web3.keccak(text=out["canonical"]).hex().removeprefix("0x")).lower() == hash.lower()}
     return out
 
 
-@app.get("/escalations", dependencies=[Depends(viewer)])
-def escalations():
+@app.get("/escalations")
+def escalations(p: dict = Depends(viewer)):
+    frag, args = _in(_scope(p))
     with db.conn() as c:
-        return [dict(r) for r in c.execute("SELECT * FROM decisions WHERE action IN ('ESCALATE','PARTIAL','SCREEN_FAIL') AND approved_tx IS NULL AND human_agreed IS NULL ORDER BY created_at DESC")]
+        return [dict(r) for r in c.execute("SELECT * FROM decisions WHERE action IN ('ESCALATE','PARTIAL','SCREEN_FAIL') AND approved_tx IS NULL"
+                                           " AND human_agreed IS NULL" + frag + " ORDER BY created_at DESC", args)]
 
 
 class ApproveIn(BaseModel):
@@ -266,11 +326,13 @@ class ApproveIn(BaseModel):
 
 @app.post("/escalations/{hash}/approve")
 def approve(hash: str, body: ApproveIn, request: Request):
-    auth.need(request, body.owner_secret, ("owner", "demo"))
+    p = auth.need(request, body.owner_secret, ("owner", "demo"))
     with db.conn() as c:
         d = c.execute("SELECT * FROM decisions WHERE hash=?", (hash,)).fetchone()
     if not d:
         raise HTTPException(404)
+    _check(p, d["allowance_id"])
+    wallet_id, _ = _wallet(p)
     if d["action"] == "SCREEN_FAIL":
         raise HTTPException(400, "screen failures cannot be approved")
     if d["approved_tx"]:
@@ -283,7 +345,7 @@ def approve(hash: str, body: ApproveIn, request: Request):
         if signer.OWNER_SIGNER != "circle":
             raise HTTPException(400, "cross-chain payout needs Circle Developer-Controlled wallets (OWNER_SIGNER=circle)")
         import cctp
-        r = cctp.payout_crosschain(d["remainder"], m["payee"], os.environ["OWNER_WALLET_ID"])
+        r = cctp.payout_crosschain(d["remainder"], m["payee"], wallet_id or os.environ["OWNER_WALLET_ID"])
         with db.conn() as c:
             c.execute("UPDATE decisions SET approved_tx=?, mint_tx=?, human_agreed=1 WHERE hash=?", (r["burn_tx"], r["mint_tx"], hash))
             c.execute("UPDATE milestones SET status='paid', paid_tx=? WHERE id=?", (r["mint_tx"], d["milestone_id"]))
@@ -295,7 +357,7 @@ def approve(hash: str, body: ApproveIn, request: Request):
     if a["funded"] < d["remainder"]:
         raise HTTPException(409, f"The budget holds {a['funded'] / 1e6:.2f} USDC. Top it up by {(d['remainder'] - a['funded']) / 1e6:.2f} USDC, then approve.")
     # PARTIAL remainders are keyed by their derived escalation hash (the decision hash was consumed by pay()).
-    r = signer.owner_approve_and_pay(d["allowance_id"], d["remainder"], d["escalation_hash"] or hash)
+    r = signer.owner_approve_and_pay(d["allowance_id"], d["remainder"], d["escalation_hash"] or hash, wallet_id)
     with db.conn() as c:
         c.execute("UPDATE decisions SET approved_tx=?, human_agreed=1 WHERE hash=?", (r["txHash"], hash))
         c.execute("UPDATE milestones SET status='paid', paid_tx=? WHERE id=?", (r["txHash"], d["milestone_id"]))
@@ -304,7 +366,12 @@ def approve(hash: str, body: ApproveIn, request: Request):
 
 @app.post("/escalations/{hash}/reject")
 def reject(hash: str, body: ApproveIn, request: Request):
-    auth.need(request, body.owner_secret, ("owner", "demo"))
+    p = auth.need(request, body.owner_secret, ("owner", "demo"))
+    with db.conn() as c:
+        d = c.execute("SELECT allowance_id FROM decisions WHERE hash=?", (hash,)).fetchone()
+    if not d:
+        raise HTTPException(404)
+    _check(p, d["allowance_id"])
     with db.conn() as c:
         c.execute("UPDATE decisions SET human_agreed=0 WHERE hash=?", (hash,))
         c.execute("UPDATE milestones SET status='rejected' WHERE id=(SELECT milestone_id FROM decisions WHERE hash=?)", (hash,))
@@ -357,14 +424,16 @@ def revoke_allowance(id: int, body: RevokeIn, request: Request):
     return signer.owner_revoke(id)
 
 
-@app.get("/allowances", dependencies=[Depends(viewer)])
-def list_allowances():
-    n = AM.functions.nextId().call()
-    return [{"id": i, **_allowance(i)} for i in range(n)]
+@app.get("/allowances")
+def list_allowances(p: dict = Depends(viewer)):
+    ids = _scope(p)
+    ids = sorted(ids) if ids is not None else range(AM.functions.nextId().call())
+    return [{"id": i, **_allowance(i)} for i in ids]
 
 
-@app.get("/allowances/{id}", dependencies=[Depends(viewer)])
-def get_allowance(id: int):
+@app.get("/allowances/{id}")
+def get_allowance(id: int, p: dict = Depends(viewer)):
+    _check(p, id)
     return {"id": id, **_allowance(id)}
 
 
@@ -401,8 +470,17 @@ def save_treasury(t: TreasuryIn):
     return {"ok": True}
 
 
-@app.get("/treasury", dependencies=[Depends(viewer)])
-def list_treasury(limit: int = 100):
+@app.get("/treasury")
+def list_treasury(limit: int = 100, p: dict = Depends(viewer)):
+    _, owner_addr = _wallet(p)
+    if (p.get("workspace_id") or 1) != 1:   # new workspaces: their own USYC position; the agent reserve belongs to the launch workspace
+        out = {"events": [], "sweeper": None}
+        try:
+            import usyc
+            out["usyc"] = usyc.position(w3, owner_addr)
+        except Exception as e:
+            out["usyc_error"] = str(e)[:200]
+        return out
     with db.conn() as c:
         rows = [dict(r) for r in c.execute("SELECT * FROM treasury ORDER BY created_at DESC LIMIT ?", (limit,))]
     out = {"events": rows, "sweeper": os.environ.get("YIELD_SWEEPER")}
@@ -439,38 +517,45 @@ def _usyc_event(action: str, assets: int, shares: int, tx: str | None):
 @app.post("/treasury/usyc/deposit")
 def usyc_deposit(body: UsycIn, request: Request):
     """Owner moves idle USDC from their Circle wallet into USYC through Circle's Teller."""
-    auth.need(request)
+    p = auth.need(request)
+    wallet_id, owner_addr = _wallet(p)
     if signer.OWNER_SIGNER != "circle":
         raise HTTPException(400, "USYC needs the owner's Circle wallet (OWNER_SIGNER=circle)")
     if body.amount <= 0:
         raise HTTPException(400, "Enter an amount of USDC to move into USYC.")
     import usyc
-    before = usyc.position(w3, signer.owner_address())["shares"]
-    r = usyc.deposit(os.environ["OWNER_WALLET_ID"], signer.owner_address(), body.amount)
+    pos0 = usyc.position(w3, owner_addr)
+    if not pos0["allowlisted"]:
+        raise HTTPException(403, "USYC needs Circle to allowlist your wallet first.")
+    before = pos0["shares"]
+    r = usyc.deposit(wallet_id or os.environ["OWNER_WALLET_ID"], owner_addr, body.amount)
     if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
         raise HTTPException(502, f"USYC deposit did not complete: {r.get('errorReason') or r.get('state')}")
-    after = usyc.position(w3, signer.owner_address())
-    _usyc_event("USYC_MINT", body.amount, max(after["shares"] - before, 0), r.get("txHash"))
+    after = usyc.position(w3, owner_addr)
+    if (p.get("workspace_id") or 1) == 1:
+        _usyc_event("USYC_MINT", body.amount, max(after["shares"] - before, 0), r.get("txHash"))
     return {"txHash": r.get("txHash"), "usyc": after}
 
 
 @app.post("/treasury/usyc/redeem")
 def usyc_redeem(body: UsycIn, request: Request):
     """Owner redeems USYC back to USDC in their Circle wallet (for example to top up a contractor's budget)."""
-    auth.need(request)
+    p = auth.need(request)
+    wallet_id, owner_addr = _wallet(p)
     import usyc
-    pos = usyc.position(w3, signer.owner_address())
+    pos = usyc.position(w3, owner_addr)
     shares = pos["shares"] if body.all else body.shares
     if shares <= 0 or shares > pos["shares"]:
         raise HTTPException(400, f"You hold {pos['shares'] / 1e6:.6f} USYC.")
     usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
-    bal_before = usdc.functions.balanceOf(Web3.to_checksum_address(signer.owner_address())).call()
-    r = usyc.redeem(os.environ["OWNER_WALLET_ID"], signer.owner_address(), shares)
+    bal_before = usdc.functions.balanceOf(Web3.to_checksum_address(owner_addr)).call()
+    r = usyc.redeem(wallet_id or os.environ["OWNER_WALLET_ID"], owner_addr, shares)
     if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
         raise HTTPException(502, f"USYC redeem did not complete: {r.get('errorReason') or r.get('state')}")
-    got = usdc.functions.balanceOf(Web3.to_checksum_address(signer.owner_address())).call() - bal_before
-    _usyc_event("USYC_REDEEM", max(got, 0), shares, r.get("txHash"))
-    return {"txHash": r.get("txHash"), "usdc_received": got, "usyc": usyc.position(w3, signer.owner_address())}
+    got = usdc.functions.balanceOf(Web3.to_checksum_address(owner_addr)).call() - bal_before
+    if (p.get("workspace_id") or 1) == 1:
+        _usyc_event("USYC_REDEEM", max(got, 0), shares, r.get("txHash"))
+    return {"txHash": r.get("txHash"), "usdc_received": got, "usyc": usyc.position(w3, owner_addr)}
 
 
 class TreasuryFundIn(BaseModel):
@@ -481,7 +566,9 @@ class TreasuryFundIn(BaseModel):
 @app.post("/treasury/fund")
 def fund_treasury(body: TreasuryFundIn, request: Request):
     """Owner tops up the YieldSweeper reserve with USDC (plain ERC-20 transfer)."""
-    auth.need(request, body.owner_secret)
+    p = auth.need(request, body.owner_secret)
+    if (p.get("workspace_id") or 1) != 1:
+        raise HTTPException(403, "The agent reserve belongs to the launch workspace.")
     return signer.owner_transfer_usdc(os.environ["YIELD_SWEEPER"], body.amount)
 
 
@@ -519,16 +606,23 @@ def _sign_with_circle(wallet_id: str, allowance_id: int, title: str, amount: int
         {"walletId": wallet_id, "data": json.dumps(typed), "memo": "STEWARD milestone"})).data.signature
 
 
-def _create_circle_wallet(name: str) -> tuple[str, str]:
+def _create_circle_wallet(name: str, kind: str = "contractor") -> tuple[str, str]:
     """Create a Circle Developer-Controlled EOA wallet on ARC-TESTNET in our wallet set. Returns (wallet_id, address)."""
     from circle.web3 import developer_controlled_wallets as dcw
     from circle.web3 import utils
     client = utils.init_developer_controlled_wallets_client(api_key=os.environ["CIRCLE_API_KEY"], entity_secret=os.environ["CIRCLE_ENTITY_SECRET"])
     res = dcw.WalletsApi(client).create_wallet(dcw.CreateWalletRequest.from_dict({
         "walletSetId": os.environ["CIRCLE_WALLET_SET_ID"], "blockchains": ["ARC-TESTNET"], "count": 1, "accountType": "EOA",
-        "metadata": [{"name": f"contractor:{name}"[:50]}]}))
+        "metadata": [{"name": f"{kind}:{name}"[:50]}]}))
     w = res.data.wallets[0]
     return w.id, w.address
+
+
+def _payer_name(row: dict) -> str:
+    try:
+        return auth.workspace(row.get("workspace_id") or 1)["name"]
+    except Exception:
+        return PAYER_NAME
 
 
 def _contractor_view(row: dict) -> dict:
@@ -539,7 +633,7 @@ def _contractor_view(row: dict) -> dict:
         paid = c.execute("SELECT COUNT(*) FROM milestones WHERE allowance_id=? AND status IN ('paid','partial')", (row["allowance_id"],)).fetchone()[0]
     return {"id": row["id"], "name": row["name"], "contact": row["contact"], "address": row["address"], "has_circle_wallet": bool(row["circle_wallet_id"]),
             "allowance_id": row["allowance_id"], "status": "revoked" if a["revoked"] else row["status"], "created_at": row["created_at"],
-            "link": f"{PUBLIC_WEB}/c/{row['token']}", "payer": PAYER_NAME,
+            "link": f"{PUBLIC_WEB}/c/{row['token']}", "payer": _payer_name(row),
             "policy": {"per_tx": a["perTxCap"], "cap_period": a["capPerPeriod"], "period": a["period"], "expiry": a["expiry"]},
             "budget": {"funded": a["funded"], "spent_this_period": a["spentThisPeriod"], "remaining_this_period": max(a["capPerPeriod"] - a["spentThisPeriod"], 0),
                        "period_start": a["periodStart"], "period_end": period_end},
@@ -561,40 +655,53 @@ class ContractorIn(BaseModel):
 
 @app.post("/contractors")
 def add_contractor(body: ContractorIn, request: Request):
-    auth.need(request, body.owner_secret)
+    p = auth.need(request, body.owner_secret)
+    ws = auth.workspace(p.get("workspace_id"))
+    wallet_id_owner, owner_addr = _wallet(p)
     import secrets as _secrets
     address, wallet_id = body.address.strip(), None
     out: dict = {}
     if body.allowance_id is not None:
+        _check(p, body.allowance_id)
         a = _allowance(body.allowance_id)
         if a["payee"] == "0x0000000000000000000000000000000000000000":
             raise HTTPException(404, "no such allowance")
         address, aid = a["payee"], body.allowance_id
     else:
+        if signer.OWNER_SIGNER == "circle":   # a new workspace's wallet starts empty: say so instead of failing on gas
+            usdc_c = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+            have = usdc_c.functions.balanceOf(Web3.to_checksum_address(owner_addr)).call()
+            need = body.fund + 50_000   # the budget plus a little for Arc fees (paid in USDC)
+            if have < need:
+                raise HTTPException(402, f"Your wallet has {have / 1e6:.2f} USDC; this needs about {need / 1e6:.2f}. "
+                                         "Add test USDC from faucet.circle.com (Arc Testnet) to your wallet address on the Overview page.")
         if not address:
             if not os.environ.get("CIRCLE_WALLET_SET_ID"):
                 raise HTTPException(400, "no wallet address given and Circle wallet creation is not configured")
             wallet_id, address = _create_circle_wallet(body.name)
             out["circle_wallet_created"] = True
         address = Web3.to_checksum_address(address)
-        r = signer.owner_create(os.environ["AGENT_ADDRESS"], address, body.cap_period, body.per_tx, body.period, body.expiry)
+        r = signer.owner_create(os.environ["AGENT_ADDRESS"], address, body.cap_period, body.per_tx, body.period, body.expiry, wallet_id_owner)
         aid = AM.functions.nextId().call() - 1
         out["create_tx"] = r["txHash"]
         if body.fund:
-            out["fund_tx"] = signer.owner_fund(aid, body.fund)["txHash"]
+            out["fund_tx"] = signer.owner_fund(aid, body.fund, wallet_id_owner)["txHash"]
     cid, token = str(uuid.uuid4()), _secrets.token_urlsafe(24)
     with db.conn() as c:
-        c.execute("INSERT INTO contractors(id,name,contact,address,circle_wallet_id,allowance_id,token,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
-                  (cid, body.name.strip(), body.contact.strip(), address, wallet_id, aid, token, "active", int(time.time())))
-        c.execute("INSERT OR IGNORE INTO payers VALUES(?,?,?)", (signer.owner_address(), PAYER_NAME, int(time.time())))
+        c.execute("INSERT INTO contractors(id,name,contact,address,circle_wallet_id,allowance_id,token,status,created_at,workspace_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (cid, body.name.strip(), body.contact.strip(), address, wallet_id, aid, token, "active", int(time.time()), ws["id"]))
+        c.execute("INSERT OR IGNORE INTO payers VALUES(?,?,?)", (owner_addr, ws["name"], int(time.time())))
         row = dict(c.execute("SELECT * FROM contractors WHERE id=?", (cid,)).fetchone())
     return {**out, **_contractor_view(row)}
 
 
-@app.get("/contractors", dependencies=[Depends(viewer)])
-def list_contractors():
+@app.get("/contractors")
+def list_contractors(p: dict = Depends(viewer)):
     with db.conn() as c:
-        rows = [dict(r) for r in c.execute("SELECT * FROM contractors ORDER BY created_at DESC")]
+        if p.get("workspace_id") is None:
+            rows = [dict(r) for r in c.execute("SELECT * FROM contractors ORDER BY created_at DESC")]
+        else:
+            rows = [dict(r) for r in c.execute("SELECT * FROM contractors WHERE COALESCE(workspace_id,1)=? ORDER BY created_at DESC", (p["workspace_id"],))]
     return [_contractor_view(r) for r in rows]
 
 
@@ -605,23 +712,25 @@ class OwnerActionIn(BaseModel):
 
 @app.post("/contractors/{id}/fund")
 def fund_contractor(id: str, body: OwnerActionIn, request: Request):
-    auth.need(request, body.owner_secret)
+    p = auth.need(request, body.owner_secret)
+    row = _own_contractor(p, id)
+    return signer.owner_fund(row["allowance_id"], body.amount, _wallet(p)[0])
+
+
+def _own_contractor(p: dict, id: str) -> dict:
     with db.conn() as c:
         row = c.execute("SELECT * FROM contractors WHERE id=?", (id,)).fetchone()
-    if not row:
+    if not row or (p.get("workspace_id") is not None and (row["workspace_id"] or 1) != p["workspace_id"]):
         raise HTTPException(404)
-    return signer.owner_fund(row["allowance_id"], body.amount)
+    return dict(row)
 
 
 @app.post("/contractors/{id}/revoke")
 def revoke_contractor(id: str, body: OwnerActionIn, request: Request):
     """Ends the allowance: unspent USDC returns to the owner and the agent is locked out. The link stops accepting requests."""
-    auth.need(request, body.owner_secret)
-    with db.conn() as c:
-        row = c.execute("SELECT * FROM contractors WHERE id=?", (id,)).fetchone()
-    if not row:
-        raise HTTPException(404)
-    r = signer.owner_revoke(row["allowance_id"])
+    p = auth.need(request, body.owner_secret)
+    row = _own_contractor(p, id)
+    r = signer.owner_revoke(row["allowance_id"], _wallet(p)[0])
     with db.conn() as c:
         c.execute("UPDATE contractors SET status='revoked' WHERE id=?", (id,))
     return r

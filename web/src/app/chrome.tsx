@@ -26,7 +26,7 @@ export default function Chrome() {
       </header>
     );
   }
-  if (path === "/signin") {
+  if (path === "/signin" || path === "/signup") {
     return (
       <header className="px-4 sm:px-6 py-3 text-sm flex items-center">
         <Link href="/" className="flex items-center gap-1.5 font-semibold tracking-tight text-base"><ShieldCheck className="h-5 w-5 text-emerald-400" />STEWARD</Link>
@@ -44,7 +44,7 @@ export default function Chrome() {
           {DEMO_ENABLED && !me && <Link href="/demo" className="text-zinc-300 hover:text-white hidden sm:inline">Try the demo</Link>}
           {me
             ? <Link href="/dashboard" className="inline-flex items-center rounded-md bg-emerald-500 text-zinc-950 px-3 py-1.5 font-medium hover:bg-emerald-400">Go to dashboard</Link>
-            : <Link href="/signin" className="inline-flex items-center rounded-md bg-emerald-500 text-zinc-950 px-3 py-1.5 font-medium hover:bg-emerald-400">Sign in</Link>}
+            : <><Link href="/signin" className="text-zinc-300 hover:text-white">Sign in</Link><Link href="/signup" className="inline-flex items-center rounded-md bg-emerald-500 text-zinc-950 px-3 py-1.5 font-medium hover:bg-emerald-400">Get started</Link></>}
         </div>
       </nav>
     );

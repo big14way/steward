@@ -3,6 +3,7 @@ import { ArrowUpRight, Users, Inbox, ScrollText, Wallet, Coins, CheckCheck, Time
 import { usd, ago, short, ruleText, decisionLabel, amountLabel, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
 import { serverGet } from "@/lib/server";
 import { Card, Pill, Stat, TxLink } from "../ui";
+import CopyButton from "../copy-button";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,33 @@ export default async function Dashboard() {
   }
   return (
     <div className="space-y-8">
+      {a && a.budgets === 0 && (
+        <Card className="p-6 border-emerald-500/30 bg-emerald-500/5">
+          <div className="text-lg font-medium">Welcome to STEWARD{a.payer ? `, ${a.payer}` : ""}</div>
+          <p className="mt-1 text-sm text-zinc-400">Three steps to your first payment. Your Circle wallet on Arc is ready; it signs every budget and approval for you.</p>
+          <ol className="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+            <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+              <div className="font-medium">1 · Add test USDC to your wallet</div>
+              <p className="mt-1 text-zinc-400">Open Circle's faucet, choose <b>Arc Testnet</b>, and paste your wallet address. You get 10 USDC for budgets and fees.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <code className="text-[11px] bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1">{short(a.owner, 6)}</code>
+                <CopyButton text={a.owner} label="Copy address" />
+                <a href={a.faucet} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md bg-emerald-500 text-zinc-950 px-2.5 py-1 text-xs font-medium hover:bg-emerald-400">Open faucet<ArrowUpRight className="h-3.5 w-3.5" /></a>
+              </div>
+              <div className="mt-2 text-xs text-zinc-500">Balance now: {usd(a.owner_usdc)} USDC</div>
+            </li>
+            <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+              <div className="font-medium">2 · Add your first contractor</div>
+              <p className="mt-1 text-zinc-400">Name, a cap per payment, a cap per week, and how much to fund. STEWARD creates their Circle wallet if they don't have one.</p>
+              <Link href="/contractors" className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-2.5 py-1 text-xs hover:bg-zinc-700"><Users className="h-3.5 w-3.5" />Add a contractor</Link>
+            </li>
+            <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+              <div className="font-medium">3 · Send them their link</div>
+              <p className="mt-1 text-zinc-400">They request payment from it. The agent pays what's within policy and sends you anything over the cap in Approvals.</p>
+            </li>
+          </ol>
+        </Card>
+      )}
       <section className="grid lg:grid-cols-[1.2fr_1fr] gap-4">
         <Card className="p-6">
           <div className="flex items-center gap-2 text-xs text-zinc-400"><Wallet className="h-3.5 w-3.5" />{a?.payer ?? "Owner"} · owner wallet</div>

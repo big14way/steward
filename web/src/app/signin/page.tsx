@@ -63,6 +63,7 @@ function SignIn() {
           )}
         </Card>
         <p className="text-xs text-zinc-500 flex gap-2"><Link2 className="h-4 w-4 shrink-0 text-zinc-600" />Getting paid by a STEWARD customer? You don’t need an account. Open the private link they sent you.</p>
+        <p className="text-center text-sm text-zinc-400">New to STEWARD? <Link className="underline hover:text-white" href="/signup">Create a workspace</Link></p>
         <p className="text-center text-xs text-zinc-600"><Link className="underline hover:text-zinc-400" href="/">Back to the home page</Link></p>
       </div>
     </div>

@@ -88,25 +88,25 @@ def _agent() -> str:
     return os.environ["AGENT_WALLET_ID"]
 
 
-def owner_approve_usdc(amount: int):
-    return wait(execute(_owner(), USDC, "approve(address,uint256)", [_am(), str(amount)]))
+def owner_approve_usdc(amount: int, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), USDC, "approve(address,uint256)", [_am(), str(amount)]))
 
 
-def owner_create(agent_addr, payee, cap_period, per_tx, period, expiry):
-    return wait(execute(_owner(), _am(), "create(address,address,uint128,uint128,uint64,uint64)",
+def owner_create(agent_addr, payee, cap_period, per_tx, period, expiry, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), _am(), "create(address,address,uint128,uint128,uint64,uint64)",
                         [agent_addr, payee, str(cap_period), str(per_tx), str(period), str(expiry)]))
 
 
-def owner_fund(allowance_id: int, amount: int):
-    return wait(execute(_owner(), _am(), "fund(uint256,uint128)", [str(allowance_id), str(amount)]))
+def owner_fund(allowance_id: int, amount: int, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), _am(), "fund(uint256,uint128)", [str(allowance_id), str(amount)]))
 
 
-def owner_approve_and_pay(allowance_id: int, amount: int, decision_hash_hex: str):
-    return wait(execute(_owner(), _am(), "approveAndPay(uint256,uint128,bytes32)", [str(allowance_id), str(amount), decision_hash_hex]))
+def owner_approve_and_pay(allowance_id: int, amount: int, decision_hash_hex: str, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), _am(), "approveAndPay(uint256,uint128,bytes32)", [str(allowance_id), str(amount), decision_hash_hex]))
 
 
-def owner_revoke(allowance_id: int):
-    return wait(execute(_owner(), _am(), "revoke(uint256)", [str(allowance_id)]))
+def owner_revoke(allowance_id: int, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), _am(), "revoke(uint256)", [str(allowance_id)]))
 
 
 def agent_pay(allowance_id: int, amount: int, decision_hash_hex: str, memo: str):
@@ -125,8 +125,8 @@ def agent_redeem(shares: int):
     return wait(execute(_agent(), os.environ["YIELD_SWEEPER"], "redeem(uint256)", [str(shares)]))
 
 
-def owner_transfer_usdc(to: str, amount: int):
-    return wait(execute(_owner(), USDC, "transfer(address,uint256)", [to, str(amount)]))
+def owner_transfer_usdc(to: str, amount: int, wallet_id: str | None = None):
+    return wait(execute(wallet_id or _owner(), USDC, "transfer(address,uint256)", [to, str(amount)]))
 
 
 def agent_record(allowance_id: int, decision_hash_hex: str, action_code: int, amount: int):
