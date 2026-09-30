@@ -5,6 +5,39 @@ expiry the agent can't exceed, an on-chain decision log, and an escalation path.
 
 Contracts + docs: https://github.com/big14way/steward (Tameion Agents Hackathon, Canteen × Circle × Arc).
 
+## Step 0: create a budget for your agent (the owner does this once)
+
+The owner wallet creates an allowance on the deployed `AllowanceManager` (Arc Testnet) and funds it with USDC. Your agent can then pay
+that one payee, within those limits, and nothing else.
+
+```ts
+import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { arcTestnet } from "steward-arc-sdk";
+
+const AM = "0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6";    // AllowanceManager on Arc Testnet
+const USDC = "0x3600000000000000000000000000000000000000";  // USDC on Arc (6 decimals)
+const abi = parseAbi([
+  "function nextId() view returns (uint256)",
+  "function create(address agent, address payee, uint128 capPerPeriod, uint128 perTxCap, uint64 period, uint64 expiry) returns (uint256)",
+  "function fund(uint256 id, uint128 amount)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+]);
+const pub = createPublicClient({ chain: arcTestnet, transport: http() });
+const owner = createWalletClient({ account: privateKeyToAccount(process.env.OWNER_PK as `0x${string}`), chain: arcTestnet, transport: http() });
+const gas = { maxFeePerGas: 25_000_000_000n, maxPriorityFeePerGas: 1_000_000_000n };  // Arc's floor is 20 gwei
+
+const id = await pub.readContract({ address: AM, abi, functionName: "nextId" });
+// 50 USDC per payment, 200 USDC per week, no expiry
+await pub.waitForTransactionReceipt({ hash: await owner.writeContract({ address: AM, abi, functionName: "create",
+  args: [AGENT_ADDRESS, PAYEE_ADDRESS, 200_000_000n, 50_000_000n, 604_800n, 0n], ...gas }) });
+await pub.waitForTransactionReceipt({ hash: await owner.writeContract({ address: USDC, abi, functionName: "approve", args: [AM, 200_000_000n], ...gas }) });
+await pub.waitForTransactionReceipt({ hash: await owner.writeContract({ address: AM, abi, functionName: "fund", args: [id, 200_000_000n], ...gas }) });
+console.log("allowanceId", id);   // pass this to steward.decide()
+```
+
+Prefer a UI? The hosted app does the same from *Contractors → Add contractor*.
+
 ## TypeScript
 
 ```bash
