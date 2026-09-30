@@ -22,7 +22,7 @@ and asks a human only when a request is outside policy. USDC on Arc, signed by C
 budget and a Circle wallet created for them, including one real freelancer paid to their own wallet. Self-serve sign-up is live, so more businesses can onboard: _(add each real business: name, contractors, payments)._
 
 **Value moved.** 11.15 USDC paid to contractors across 19 paid requests; 21 agent decisions recorded on-chain (11 paid by the agent within
-policy, 8 sent to the owner, 2 blocked screening failure); 88.9% of reviewed escalations approved by the owner; 100% paid within 24 hours;
+policy, 8 sent to the owner, 2 blocked screening failures); 88.9% of reviewed escalations approved by the owner; 100% paid within 24 hours;
 first cross-chain payout (CCTP V2, Arc to Base Sepolia) delivered 23 seconds after approval; idle owner USDC moved into real USYC and back.
 
 **Problem solved.** Businesses that let an agent pay people choose between handing it an uncapped wallet or approving every payment by
