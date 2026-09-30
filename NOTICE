@@ -1,0 +1,11 @@
+STEWARD
+Copyright (c) 2026 Godswill Idolor
+Licensed under the MIT License (see LICENSE).
+
+Third-party code
+
+api/circle_webhook_verify.py is adapted from circlefin/arc-escrow
+(https://github.com/circlefin/arc-escrow), Copyright Circle Internet Financial,
+licensed under the Apache License, Version 2.0
+(https://www.apache.org/licenses/LICENSE-2.0). That file remains under the
+Apache License 2.0.

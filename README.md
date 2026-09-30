@@ -267,4 +267,4 @@ Circle wallet creation and webhook signature verification are adapted from [`cir
 
 ## License
 
-[MIT](LICENSE). `api/circle_webhook_verify.py` is adapted from `circlefin/arc-escrow` and stays under Apache-2.0, as noted in the license file.
+[MIT](LICENSE). `api/circle_webhook_verify.py` is adapted from `circlefin/arc-escrow` and stays under Apache-2.0 (see [NOTICE](NOTICE)).

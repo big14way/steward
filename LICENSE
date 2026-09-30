@@ -19,13 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Third-party code
-
-api/circle_webhook_verify.py is adapted from circlefin/arc-escrow
-(https://github.com/circlefin/arc-escrow), Copyright Circle Internet Financial,
-licensed under the Apache License, Version 2.0
-(https://www.apache.org/licenses/LICENSE-2.0). That file remains under the
-Apache License 2.0.
