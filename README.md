@@ -118,7 +118,7 @@ Scaffolding for Circle wallet creation and webhook verification is adapted from 
 
 ## How you use it (owner and contractor)
 
-**Owner.** Sign in once (top-right chip). *Contractors → Add contractor*: name, contact, optional wallet, max per payment, max per period, fund now.
+**Owner.** Signs in with a work email and password at [/signin](https://steward-arc.vercel.app/signin); every owner page and owner read needs that session (HttpOnly cookie). *Contractors → Add contractor*: name, contact, optional wallet, max per payment, max per period, fund now.
 No wallet? STEWARD creates a Circle Developer-Controlled wallet for them, exactly as Circle's own `arc-escrow` sample does at sign-up. You get a
 private link to send them. From then on you only see *Approvals* (requests over policy, in plain English, one tap) and *Activity* (the audit log).
 
@@ -132,11 +132,15 @@ and status pills come from Circle's `arc-escrow` reference app. Details and refe
 
 ## Demo access (for judges)
 
-There is no banner inside the product. Like a sandbox or test mode, a demo is something you start on purpose: open
-[steward-arc.vercel.app](https://steward-arc.vercel.app) → **Try the live demo** (or `/demo`). That starts a *demo session* in your browser
-with a scoped secret that can approve or decline requests only (`JUDGE_SECRET` on the API; it cannot create, fund, or revoke). While it is
-active a small **Demo session** pill sits in the app nav; *Exit demo* ends it. Every signature still happens server-side through the owner's
-Circle Developer-Controlled wallet, so there is nothing to install. The owner signs in with the real secret and never sees demo UI.
+Open [steward-arc.vercel.app](https://steward-arc.vercel.app) → **Try the live demo**, or **Explore the live demo** on the sign-in page. That opens a
+*demo session* on Acme Studio's testnet workspace: you can see everything and approve or decline real requests, but the demo role cannot add, fund
+or end budgets (the API returns 403). The account menu shows a **Demo** pill; *Leave the demo* ends it. Every approval is still signed server-side by
+the owner's Circle Developer-Controlled wallet, so there is nothing to install. A pending over-cap request (Test Writer, 0.80 USDC) and a blocked
+screening failure are left in the inbox for you.
+
+Sign-in follows what payout products already do: Deel and Stripe keep the business dashboard behind email + password (Deel also requires 2FA), demos
+and sandboxes run as separate limited roles, and the people being paid get single-purpose private links (the magic-link pattern) instead of accounts.
+2FA and self-serve sign-up are next.
 
 ## Status (honest)
 

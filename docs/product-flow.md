@@ -66,3 +66,20 @@ Sablier (an explicit "Open Example" action to explore). A persistent "you are a 
 looked unfinished. Now: `/demo` starts a scoped demo session (approve/decline only), the nav shows a **Demo session** pill while it is
 active, the owner sign-in modal offers "Explore the demo instead", the landing page has "Try the live demo", and there is no banner anywhere.
 `NEXT_PUBLIC_JUDGE_MODE=true` only enables the demo entry points.
+
+## Sign-in (Sep 30, 2026)
+
+The owner key pasted into a modal was replaced with a real sign-in, after checking how comparable products do it:
+
+| Product | Business side | Person being paid |
+|---|---|---|
+| Deel | email + password or Google, 2FA required, dashboard only after sign-in | invited by email, creates an account |
+| Stripe | email + password, test data in sandboxes with their own roles | hosted invoice / payment links, no account |
+| Assembly / Copilot portals | team login | magic links that sign a client in to one invoice or contract |
+
+STEWARD now: `/signin` (work email + password, scrypt-hashed, rate-limited) sets an HttpOnly, Secure, SameSite=Lax session cookie through the
+same-origin `/api` proxy. A Next.js `proxy.ts` sends anyone without a session from `/dashboard`, `/contractors`, `/approvals`, `/activity` and
+`/treasury` to `/signin`; the API checks the session on every owner read and write (`/account`, `/decisions`, `/escalations`, `/milestones`,
+`/allowances`, `/treasury`, `/contractors` all return 401 without it). The demo is a `demo` role (view, approve, decline; 403 on create, fund,
+revoke). Machine callers keep their keys (`X-Agent-Key` for the agent). Contractors keep their private link: it only opens their own page.
+Public: the landing page, `/stats`, `/health`, the SDK docs and contractor links. The old demo secret is no longer shipped in the browser bundle.
