@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { ArrowUpRight, Send, FileText } from "lucide-react";
 import { get, post, usd, when, ago, periodLabel, ruleText, STATUS_TEXT, type Portal, type Milestone } from "@/lib/api";
 import { Avatar, Button, Card, Field, Pill, Skeleton, TxLink, inputCls, useToast } from "../../ui";
+import WalletCard from "./wallet-card";
 
 const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sky"> = { pending: "zinc", paid: "emerald", partial: "amber", held: "zinc", escalated: "orange", rejected: "red", error: "red", batched: "sky" };
 
@@ -78,6 +79,8 @@ export default function Page() {
         <div><div className="text-xs text-zinc-500">left {periodLabel(p.policy.period)}</div><div className="text-xl font-semibold tabular-nums">{usd(p.budget.remaining_this_period)}</div><div className="text-[11px] text-zinc-600">of {usd(p.policy.cap_period)}{p.budget.period_end ? ` · resets ${when(p.budget.period_end)}` : ""}</div></div>
         <div><div className="text-xs text-zinc-500">funded right now</div><div className="text-xl font-semibold tabular-nums">{usd(p.budget.funded)}</div><div className="text-[11px] text-zinc-600">{paid} request{paid === 1 ? "" : "s"} paid so far</div></div>
       </Card>
+
+      {p.wallet && <WalletCard token={token} w={p.wallet} payer={p.payer} onChange={load} />}
 
       {p.status === "revoked" ? (
         <Card className="p-4 text-red-300 text-sm">This engagement has ended; new requests are not accepted.</Card>

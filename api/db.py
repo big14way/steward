@@ -42,6 +42,11 @@ def init() -> None:
             c.execute("ALTER TABLE milestones ADD COLUMN payout_chain TEXT DEFAULT 'arc'")
         if "mint_tx" not in cols:
             c.execute("ALTER TABLE decisions ADD COLUMN mint_tx TEXT")
+        ccols = {r[1] for r in c.execute("PRAGMA table_info(contractors)")}
+        if "payout_address" not in ccols:   # a contractor's own wallet; set once from their link, reset only by the owner
+            c.execute("ALTER TABLE contractors ADD COLUMN payout_address TEXT")
+        c.execute("CREATE TABLE IF NOT EXISTS withdrawals(id INTEGER PRIMARY KEY AUTOINCREMENT, contractor_id TEXT, kind TEXT, to_addr TEXT,"
+                  " amount INT, shares INT, tx TEXT, created_at INT)")
         tcols = {r[1] for r in c.execute("PRAGMA table_info(treasury)")}
         for col, typ in (("hash", "TEXT"), ("record_tx", "TEXT"), ("bal_after", "INT"), ("obligations", "INT"), ("canonical", "TEXT")):
             if col not in tcols:

@@ -7,6 +7,7 @@ The deployed YieldSweeper still points at MockUSYC (its vault is immutable); thi
 import circle_client as cc
 
 TELLER = "0x9fdF14c5B14173D74C08Af27AebFf39240dC105A"
+ENTITLEMENTS = "0xCC205224862C7641930c87679E98999d23C26113"   # RolesAuthority: who may call the Teller (Circle's allowlist)
 USYC = "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C"
 USDC = "0x3600000000000000000000000000000000000000"
 
@@ -26,7 +27,18 @@ def position(w3, owner: str) -> dict:
     shares = w3.eth.contract(address=Web3.to_checksum_address(USYC), abi=BAL_ABI).functions.balanceOf(owner).call()
     price = teller.functions.previewRedeem(1_000_000).call()
     return {"teller": TELLER, "token": USYC, "shares": shares, "value": teller.functions.previewRedeem(shares).call() if shares else 0,
-            "price": price, "allowlisted": teller.functions.maxDeposit(owner).call() > 0}
+            "price": price, "allowlisted": allowlisted(w3, owner)}
+
+
+def allowlisted(w3, account: str) -> bool:
+    """Circle's Entitlements (RolesAuthority) decides who may subscribe: canCall(account, Teller, deposit.selector).
+    (The Teller's maxDeposit is not an allowlist check: it reports a limit for any address.)"""
+    from web3 import Web3
+    sel = Web3.keccak(text="deposit(uint256,address)")[:4]
+    data = Web3.keccak(text="canCall(address,address,bytes4)")[:4] + w3.codec.encode(
+        ["address", "address", "bytes4"], [Web3.to_checksum_address(account), Web3.to_checksum_address(TELLER), sel])
+    out = w3.eth.call({"to": Web3.to_checksum_address(ENTITLEMENTS), "data": "0x" + data.hex()})
+    return int.from_bytes(out, "big") == 1
 
 
 def deposit(wallet_id: str, owner: str, amount: int) -> dict:

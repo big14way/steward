@@ -46,6 +46,10 @@ export default function Page() {
     setBusy(c.id); const r = await post<{ detail?: string; txHash?: string }>(`/contractors/${c.id}/fund`, { amount: Math.round(+v * 1e6) }); setBusy(""); setInline(null);
     r.ok ? toast.push("ok", <>Topped up {c.name} by {v} USDC. <a className="underline" href={`https://explorer.testnet.arc.io/tx/${r.data.txHash}`} target="_blank">tx</a></>) : toast.push("err", r.data.detail ?? "Top-up failed. Is the owner wallet funded?"); load();
   };
+  const resetPayout = async (c: Contractor) => {
+    setBusy(c.id); const r = await post<{ detail?: string }>(`/contractors/${c.id}/reset-payout`, {}); setBusy("");
+    r.ok ? toast.push("ok", `${c.name} can save a new payout address from their link.`) : toast.push("err", r.data.detail ?? "Failed"); load();
+  };
   const revoke = async (c: Contractor) => {
     setBusy(c.id); const r = await post<{ detail?: string }>(`/contractors/${c.id}/revoke`, {}); setBusy(""); setInline(null);
     r.ok ? toast.push("ok", `${c.name}'s budget ended. Unspent USDC returned to you.`) : toast.push("err", r.data.detail ?? "Revoke failed"); load();
@@ -149,6 +153,7 @@ export default function Page() {
                 <Button size="sm" onClick={() => copy(c)}>{copied === c.id ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}{copied === c.id ? "Copied" : "Copy their link"}</Button>
                 <Button size="sm" variant="secondary" disabled={busy === c.id || !isOwner} onClick={() => setInline({ id: c.id, kind: "fund", value: "5" })}><ArrowUpRight className="h-3.5 w-3.5" />Top up</Button>
                 <Link href={`/activity?allowance=${c.allowance_id}`} className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-xs px-2.5 py-1.5"><History className="h-3.5 w-3.5" />History</Link>
+                {c.payout_address && <Button size="sm" variant="ghost" disabled={busy === c.id || !isOwner} title={`Payouts go to ${c.payout_address}`} onClick={() => resetPayout(c)}>Reset payout address</Button>}
                 <Button size="sm" variant="danger" className="ml-auto" disabled={busy === c.id || !isOwner} onClick={() => setInline({ id: c.id, kind: "revoke", value: "" })}><Ban className="h-3.5 w-3.5" />End budget</Button>
               </div>
             )}

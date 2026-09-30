@@ -644,7 +644,7 @@ def _contractor_view(row: dict) -> dict:
         paid = c.execute("SELECT COUNT(*) FROM milestones WHERE allowance_id=? AND status IN ('paid','partial')", (row["allowance_id"],)).fetchone()[0]
     return {"id": row["id"], "name": row["name"], "contact": row["contact"], "address": row["address"], "has_circle_wallet": bool(row["circle_wallet_id"]),
             "allowance_id": row["allowance_id"], "status": "revoked" if a["revoked"] else row["status"], "created_at": row["created_at"],
-            "link": f"{PUBLIC_WEB}/c/{row['token']}", "payer": _payer_name(row),
+            "link": f"{PUBLIC_WEB}/c/{row['token']}", "payer": _payer_name(row), "payout_address": row.get("payout_address"),
             "policy": {"per_tx": a["perTxCap"], "cap_period": a["capPerPeriod"], "period": a["period"], "expiry": a["expiry"]},
             "budget": {"funded": a["funded"], "spent_this_period": a["spentThisPeriod"], "remaining_this_period": max(a["capPerPeriod"] - a["spentThisPeriod"], 0),
                        "period_start": a["periodStart"], "period_end": period_end},
@@ -728,6 +728,16 @@ def fund_contractor(id: str, body: OwnerActionIn, request: Request):
     return signer.owner_fund(row["allowance_id"], body.amount, _wallet(p)[0])
 
 
+@app.post("/contractors/{id}/reset-payout")
+def reset_payout(id: str, body: OwnerActionIn, request: Request):
+    """The business clears a contractor's saved payout address (for example after they changed wallets)."""
+    p = auth.need(request, body.owner_secret)
+    row = _own_contractor(p, id)
+    with db.conn() as c:
+        c.execute("UPDATE contractors SET payout_address=NULL WHERE id=?", (row["id"],))
+    return {"ok": True}
+
+
 def _own_contractor(p: dict, id: str) -> dict:
     with db.conn() as c:
         row = c.execute("SELECT * FROM contractors WHERE id=?", (id,)).fetchone()
@@ -767,7 +777,121 @@ def contractor_portal(token: str):
             m.pop("signature", None)
     v["requests_list"] = ms
     v["explorer"] = EXPLORER
+    v["wallet"] = _contractor_wallet(row)
     return v
+
+
+# ---- the contractor's own money: send it to their own wallet (locked payout address) or park it in USYC ----
+FEE_RESERVE = 20_000   # 0.02 USDC stays behind for Arc's network fee (fees are paid in USDC from the same wallet)
+DENY = {"0x70997970c51812dc3a010c7d01b50e0d17dc79c8", "0x0000000000000000000000000000000000000000"}
+
+
+def _usdc_of(addr: str) -> int:
+    usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+    return usdc.functions.balanceOf(Web3.to_checksum_address(addr)).call()
+
+
+def _contractor_wallet(row: dict) -> dict | None:
+    """Balance of the Circle wallet STEWARD created for the contractor, where it can go, and what already left."""
+    if not row.get("circle_wallet_id"):
+        return None
+    try:
+        bal = _usdc_of(row["address"])
+    except Exception:
+        return None
+    with db.conn() as c:
+        moves = [dict(r) for r in c.execute("SELECT kind, to_addr, amount, shares, tx, created_at FROM withdrawals WHERE contractor_id=? ORDER BY created_at DESC LIMIT 20", (row["id"],))]
+    out = {"address": row["address"], "balance": bal, "available": max(bal - FEE_RESERVE, 0), "fee_reserve": FEE_RESERVE,
+           "payout_address": row.get("payout_address"), "moves": moves}
+    try:
+        import usyc
+        out["usyc"] = usyc.position(w3, row["address"])
+    except Exception:
+        pass
+    return out
+
+
+class WithdrawIn(BaseModel):
+    to: str = ""
+    confirm: str = ""
+    amount: int = 0     # 0 = everything available
+
+
+@app.post("/c/{token}/withdraw")
+def contractor_withdraw(token: str, body: WithdrawIn):
+    """Send USDC from the contractor's STEWARD wallet to their own wallet. The first send saves the address; after that the link
+    can only send there, and only the business owner can reset it, so a leaked link cannot redirect the money."""
+    row = _by_token(token)
+    if not row.get("circle_wallet_id"):
+        raise HTTPException(400, "Your payments already go straight to your own wallet.")
+    saved, to = row.get("payout_address"), body.to.strip()
+    if saved:
+        if to and to.lower() != saved.lower():
+            raise HTTPException(409, f"Your payout address is locked to {saved[:8]}…{saved[-4:]}. Ask {_payer_name(row)} to reset it if it changed.")
+        to = saved
+    else:
+        if not Web3.is_address(to):
+            raise HTTPException(400, "Enter a valid wallet address on Arc (0x followed by 40 characters).")
+        if body.confirm.strip().lower() != to.lower():
+            raise HTTPException(400, "The two addresses don't match. Check them and try again.")
+        to = Web3.to_checksum_address(to)
+        if to.lower() in DENY or to.lower() == row["address"].lower():
+            raise HTTPException(400, "That address can't receive this payout.")
+        with db.conn() as c:
+            c.execute("UPDATE contractors SET payout_address=? WHERE id=?", (to, row["id"]))
+    avail = max(_usdc_of(row["address"]) - FEE_RESERVE, 0)
+    amount = body.amount or avail
+    if amount <= 0 or amount > avail:
+        raise HTTPException(400, f"You can send up to {avail / 1e6:.2f} USDC right now.")
+    import circle_client as cc
+    r = cc.wait(cc.execute(row["circle_wallet_id"], signer.USDC, "transfer(address,uint256)", [to, str(amount)]))
+    if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
+        raise HTTPException(502, f"The transfer did not complete: {r.get('errorReason') or r.get('state')}")
+    with db.conn() as c:
+        c.execute("INSERT INTO withdrawals(contractor_id,kind,to_addr,amount,shares,tx,created_at) VALUES(?,?,?,?,?,?,?)",
+                  (row["id"], "send", to, amount, 0, r.get("txHash"), int(time.time())))
+    return {"txHash": r.get("txHash"), "amount": amount, "to": to}
+
+
+class EarnIn(BaseModel):
+    amount: int = 0     # USDC to move into USYC (0 = everything available)
+    redeem_all: bool = False
+
+
+@app.post("/c/{token}/earn")
+def contractor_earn(token: str, body: EarnIn):
+    """Park the contractor's idle USDC in USYC (or bring it back). Needs Circle to have allowlisted their wallet."""
+    row = _by_token(token)
+    if not row.get("circle_wallet_id"):
+        raise HTTPException(400, "Yield is available for wallets STEWARD manages for you.")
+    import usyc
+    pos = usyc.position(w3, row["address"])
+    if not pos["allowlisted"] and not body.redeem_all:
+        raise HTTPException(403, "USYC is permissioned: Circle has to allowlist your wallet first.")
+    try:
+        if body.redeem_all:
+            if not pos["shares"]:
+                raise HTTPException(400, "You don't hold any USYC.")
+            before = _usdc_of(row["address"])
+            r = usyc.redeem(row["circle_wallet_id"], row["address"], pos["shares"])
+            amount, shares, kind = max(_usdc_of(row["address"]) - before, 0), pos["shares"], "usyc_redeem"
+        else:
+            avail = max(_usdc_of(row["address"]) - FEE_RESERVE * 3, 0)   # approve + deposit need two fees
+            amount = body.amount or avail
+            if amount <= 0 or amount > avail:
+                raise HTTPException(400, f"You can move up to {avail / 1e6:.2f} USDC into USYC right now.")
+            r = usyc.deposit(row["circle_wallet_id"], row["address"], amount)
+            shares, kind = max(usyc.position(w3, row["address"])["shares"] - pos["shares"], 0), "usyc_mint"
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(502, f"USYC did not go through ({str(e)[-60:]}). Nothing moved; try again later.")
+    if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
+        raise HTTPException(502, f"USYC did not complete: {r.get('errorReason') or r.get('state')}")
+    with db.conn() as c:
+        c.execute("INSERT INTO withdrawals(contractor_id,kind,to_addr,amount,shares,tx,created_at) VALUES(?,?,?,?,?,?,?)",
+                  (row["id"], kind, usyc.TELLER, amount, shares, r.get("txHash"), int(time.time())))
+    return {"txHash": r.get("txHash"), "amount": amount, "shares": shares, "usyc": usyc.position(w3, row["address"])}
 
 
 class RequestIn(BaseModel):

@@ -117,13 +117,17 @@ export type Treasury = {
 export type Health = { ok: boolean; chain_id: number; block: number; allowance_manager: string; owner_signer: string; owner: string; explorer: string };
 export type Contractor = {
   id: string; name: string; contact: string; address: string; has_circle_wallet: boolean; allowance_id: number; status: string; created_at: number;
-  link: string; payer: string;
+  link: string; payer: string; payout_address?: string | null;
   policy: { per_tx: number; cap_period: number; period: number; expiry: number };
   budget: { funded: number; spent_this_period: number; remaining_this_period: number; period_start: number; period_end: number | null };
   requests: { open: number; paid: number };
   create_tx?: string; fund_tx?: string; circle_wallet_created?: boolean;
 };
-export type Portal = Contractor & { requests_list: Milestone[]; explorer: string };
+export type ContractorWallet = {
+  address: string; balance: number; available: number; fee_reserve: number; payout_address?: string | null;
+  usyc?: Usyc; moves: { kind: string; to_addr: string; amount: number; shares: number; tx: string; created_at: number }[];
+};
+export type Portal = Contractor & { requests_list: Milestone[]; explorer: string; wallet?: ContractorWallet | null };
 export type Account = {
   owner: string; owner_usdc: number; agent: string | null; agent_usdc: number | null; in_budgets: number; in_reserve: number | null;
   budgets: number; payer: string; faucet: string; explorer: string;
