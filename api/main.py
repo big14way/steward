@@ -265,6 +265,12 @@ def approve(hash: str, body: ApproveIn):
             c.execute("UPDATE decisions SET approved_tx=?, mint_tx=?, human_agreed=1 WHERE hash=?", (r["burn_tx"], r["mint_tx"], hash))
             c.execute("UPDATE milestones SET status='paid', paid_tx=? WHERE id=?", (r["mint_tx"], d["milestone_id"]))
         return {"state": "COMPLETE", "txHash": r["burn_tx"], "mint_tx": r["mint_tx"], "chain": "base-sepolia"}
+    # approveAndPay pays out of the budget, so check it first and say what to do instead of surfacing a revert.
+    a = _allowance(d["allowance_id"])
+    if a["revoked"]:
+        raise HTTPException(409, "This budget was ended. Nothing can be paid from it.")
+    if a["funded"] < d["remainder"]:
+        raise HTTPException(409, f"The budget holds {a['funded'] / 1e6:.2f} USDC. Top it up by {(d['remainder'] - a['funded']) / 1e6:.2f} USDC, then approve.")
     # PARTIAL remainders are keyed by their derived escalation hash (the decision hash was consumed by pay()).
     r = signer.owner_approve_and_pay(d["allowance_id"], d["remainder"], d["escalation_hash"] or hash)
     with db.conn() as c:
