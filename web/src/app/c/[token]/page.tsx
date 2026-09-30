@@ -80,8 +80,6 @@ export default function Page() {
         <div><div className="text-xs text-zinc-500">funded right now</div><div className="text-xl font-semibold tabular-nums">{usd(p.budget.funded)}</div><div className="text-[11px] text-zinc-600">{paid} request{paid === 1 ? "" : "s"} paid so far</div></div>
       </Card>
 
-      {p.wallet && <WalletCard token={token} w={p.wallet} payer={p.payer} onChange={load} />}
-
       {p.status === "revoked" ? (
         <Card className="p-4 text-red-300 text-sm">This engagement has ended; new requests are not accepted.</Card>
       ) : (
@@ -104,6 +102,8 @@ export default function Page() {
           <Button size="lg" disabled={busy || !f.title.trim() || !(+f.amount > 0)} onClick={submit}><Send className="h-4 w-4" />{busy ? "Submitting…" : "Submit request"}</Button>
         </Card>
       )}
+
+      {p.wallet && <WalletCard token={token} w={p.wallet} payer={p.payer} onChange={load} />}
 
       <section>
         <h2 className="font-medium mb-2">Your requests</h2>

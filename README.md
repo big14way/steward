@@ -108,7 +108,7 @@ wording of a reason and nothing else. Every cycle is recorded, including `HOLD`.
 | Owner | Contractor |
 |---|---|
 | ![Contractors](web/public/shots/contractors.jpg) | ![Contractor page](web/public/shots/contractor-page.jpg) |
-| **Contractors**: add someone in one dialog (name, caps, budget). STEWARD creates a Circle wallet if they have none, creates and funds the allowance on Arc, and returns a private link. | **Their page** (no account, no wallet, no gas): budget left this period, a request form, and a timeline per request with the transaction for each step. |
+| **Contractors**: add someone in one dialog (name, caps, budget). STEWARD creates a Circle wallet if they have none, creates and funds the allowance on Arc, and returns a private link. | **Their page** (no account, no wallet, no gas): budget left this period, a request form, a timeline per request with the transaction for each step, and *Your money*: send it to their own wallet (the address is saved once; only the business can reset it) or earn yield in USYC once Circle allowlists the wallet. |
 | ![Approvals](web/public/shots/approvals.jpg) | ![Activity](web/public/shots/activity.jpg) |
 | **Approvals**: only what policy blocked, in plain English, with one-click approve. | **Activity**: every decision with its on-chain trail and replayable record. |
 
