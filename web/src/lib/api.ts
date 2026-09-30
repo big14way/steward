@@ -131,4 +131,6 @@ export type Portal = Contractor & { requests_list: Milestone[]; explorer: string
 export type Account = {
   owner: string; owner_usdc: number; agent: string | null; agent_usdc: number | null; in_budgets: number; in_reserve: number | null;
   budgets: number; payer: string; faucet: string; explorer: string; telegram?: { connected: boolean; available: boolean };
+  /** One-time starter credit from STEWARD's sponsor wallet (6-dp amount). */
+  starter?: { available: boolean; amount: number; claimed: boolean; tx: string | null; reason: string };
 };

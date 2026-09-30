@@ -22,12 +22,14 @@ import auth  # noqa: E402
 import circle_webhook_verify  # noqa: E402
 import db  # noqa: E402
 import signer  # noqa: E402
+import starter  # noqa: E402
 import usage  # noqa: E402
 
 app = FastAPI(title="STEWARD API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 db.init()
 auth.init()
+starter.init()
 usage.init()
 
 w3 = signer.w3
@@ -125,7 +127,35 @@ def account(p: dict = Depends(viewer)):
             "agent": agent, "agent_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(agent)).call() if agent else None,
             "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": ws["name"], "workspace_id": ws["id"],
             "telegram": {"connected": bool(ws.get("telegram_chat_id")), "available": bool(os.environ.get("TELEGRAM_BOT_USERNAME"))},
+            "starter": starter.status(ws["id"], p.get("role", ""), lambda a: usdc.functions.balanceOf(Web3.to_checksum_address(a)).call()),
             "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
+
+
+@app.post("/account/starter-credit")
+def starter_credit(request: Request):
+    """One click, once per business: STEWARD's sponsor wallet sends starter test USDC to the workspace's owner wallet."""
+    p = auth.need(request)
+    ws = auth.workspace(p.get("workspace_id"))
+    _, owner = _wallet(p)
+    usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+    st = starter.status(ws["id"], p["role"], lambda a: usdc.functions.balanceOf(Web3.to_checksum_address(a)).call())
+    if not st["available"]:
+        raise HTTPException(409, f"Starter credit isn't available: {st['reason']}. You can use Circle's faucet at faucet.circle.com (Arc Testnet).")
+    if not starter.claim(ws["id"]):
+        raise HTTPException(409, "This workspace already received its starter credit.")
+    import circle_client as cc
+    try:
+        r = cc.wait(cc.execute(starter.sponsor()[0], signer.USDC, "transfer(address,uint256)", [owner, str(starter.amount())]))
+    except TimeoutError:   # still in flight: keep the claim so a retry can't send it twice
+        raise HTTPException(504, "The transfer is still going through. Refresh in a minute to see your balance.")
+    except Exception as e:
+        starter.release(ws["id"])
+        raise HTTPException(502, f"The transfer did not go through, so you can try again: {e}")
+    if not r.get("txHash"):
+        starter.release(ws["id"])
+        raise HTTPException(502, "The transfer did not complete, so you can try again.")
+    starter.record(ws["id"], r["txHash"])
+    return {"txHash": r["txHash"], "amount": starter.amount(), "to": owner}
 
 
 # ---- Telegram: each workspace links its own chat; approval requests go only there, taps act only for that workspace ----
@@ -785,7 +815,7 @@ def add_contractor(body: ContractorIn, request: Request):
             need = body.fund + 50_000   # the budget plus a little for Arc fees (paid in USDC)
             if have < need:
                 raise HTTPException(402, f"Your wallet has {have / 1e6:.2f} USDC; this needs about {need / 1e6:.2f}. "
-                                         "Add test USDC from faucet.circle.com (Arc Testnet) to your wallet address on the Overview page.")
+                                         "Add test USDC on the Overview page: one click for your starter credit, or Circle's faucet at faucet.circle.com (Arc Testnet).")
         if not address:
             if not os.environ.get("CIRCLE_WALLET_SET_ID"):
                 raise HTTPException(400, "no wallet address given and Circle wallet creation is not configured")
@@ -1050,6 +1080,7 @@ async def admin_db_import(request: Request):
         f.write(raw)
     os.replace(db.DB + ".tmp", db.DB)
     db.init()
+    starter.init()
     usage.init()
     with db.conn() as c:
         n = c.execute("SELECT COUNT(*) FROM contractors").fetchone()[0]

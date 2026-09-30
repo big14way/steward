@@ -5,6 +5,7 @@ import { serverGet } from "@/lib/server";
 import { Card, Pill, Stat, TxLink } from "../ui";
 import CopyButton from "../copy-button";
 import UsageCard from "./usage-card";
+import StarterButton from "./starter-button";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,24 @@ export default async function Dashboard() {
           <ol className="mt-4 grid md:grid-cols-3 gap-3 text-sm">
             <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
               <div className="font-medium">1 · Add test USDC to your wallet</div>
-              <p className="mt-1 text-zinc-400">Open Circle's faucet, choose <b>Arc Testnet</b>, and paste your wallet address. You get 10 USDC for budgets and fees.</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <code className="text-[11px] bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1">{short(a.owner, 6)}</code>
-                <CopyButton text={a.owner} label="Copy address" />
-                <a href={a.faucet} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md bg-emerald-500 text-zinc-950 px-2.5 py-1 text-xs font-medium hover:bg-emerald-400">Open faucet<ArrowUpRight className="h-3.5 w-3.5" /></a>
-              </div>
+              {a.starter?.available ? (
+                <>
+                  <p className="mt-1 text-zinc-400">STEWARD sends your wallet {usd(a.starter.amount)} test USDC in one click, enough for a first budget and fees. You can add more any time from Circle&apos;s faucet (choose <b>Arc Testnet</b>).</p>
+                  <div className="mt-3 flex flex-wrap items-start gap-2">
+                    <StarterButton amount={a.starter.amount} />
+                    <a href={a.faucet} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 text-xs hover:bg-zinc-700">Circle&apos;s faucet<ArrowUpRight className="h-3.5 w-3.5" /></a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-zinc-400">Open Circle&apos;s faucet, choose <b>Arc Testnet</b>, and paste your wallet address. You get 10 USDC for budgets and fees.</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <code className="text-[11px] bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1">{short(a.owner, 6)}</code>
+                    <CopyButton text={a.owner} label="Copy address" />
+                    <a href={a.faucet} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md bg-emerald-500 text-zinc-950 px-2.5 py-1 text-xs font-medium hover:bg-emerald-400">Open faucet<ArrowUpRight className="h-3.5 w-3.5" /></a>
+                  </div>
+                </>
+              )}
               <div className="mt-2 text-xs text-zinc-500">Balance now: {usd(a.owner_usdc)} USDC</div>
             </li>
             <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
@@ -59,6 +72,9 @@ export default async function Dashboard() {
           <div className="mt-1 text-xs text-zinc-500">
             {a && <>+ {usd(a.in_budgets)} locked in {a.budgets} budget{a.budgets === 1 ? "" : "s"}{a.in_reserve != null && <> · {usd(a.in_reserve)} in reserve</>} · agent gas {a.agent_usdc != null ? usd(a.agent_usdc) : "—"}</>}
           </div>
+          {a?.starter?.available && a.budgets > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">Your one-time starter credit is waiting.<StarterButton amount={a.starter.amount} /></div>
+          )}
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/contractors" className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500 text-zinc-950 px-4 py-2 text-sm font-medium hover:bg-emerald-400"><Users className="h-4 w-4" />Add a contractor</Link>
             <Link href="/approvals" className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-700"><Inbox className="h-4 w-4" />Approvals</Link>
