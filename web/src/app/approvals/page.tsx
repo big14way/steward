@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inbox, ArrowUpRight, ShieldAlert, Check, X } from "lucide-react";
 import Link from "next/link";
-import { get, post, usd, tx, ago, ruleText, DEMO_ENABLED, type Decision, type Contractor, type Milestone } from "@/lib/api";
+import { get, post, usd, tx, ago, ruleText, DEMO_ENABLED, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone } from "@/lib/api";
 import { useOwnerSecret } from "../owner-chip";
 import { Avatar, Button, Card, EmptyState, PageHeader, Pill, Skeleton, useToast } from "../ui";
 
@@ -26,9 +26,9 @@ export default function Page() {
 
   const act = async (x: Item, kind: "approve" | "reject") => {
     setBusy(x.hash);
-    const r = await post<{ txHash?: string; detail?: string }>(`/escalations/${x.hash}/${kind}`, { owner_secret: secret });
+    const r = await post<{ txHash?: string; mint_tx?: string; chain?: string; detail?: string }>(`/escalations/${x.hash}/${kind}`, { owner_secret: secret });
     setBusy("");
-    if (r.ok) toast.push("ok", kind === "approve" ? <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View transaction</a></> : "Declined.");
+    if (r.ok) toast.push("ok", kind !== "approve" ? "Declined." : r.data.mint_tx ? <>Paid {usd(x.remainder)} USDC on Base Sepolia via CCTP. <a className="underline" href={tx(r.data.txHash)} target="_blank">Burn on Arc</a> · <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${r.data.mint_tx}`} target="_blank">Mint on Base Sepolia</a></> : <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View transaction</a></>);
     else toast.push("err", r.data.detail ?? `Failed (${r.status})`);
     load();
   };
@@ -62,7 +62,7 @@ export default function Page() {
                   <div className="mt-2 text-sm text-zinc-400">{x.reason}</div>
                   {!blocked ? (
                     <div className="mt-3 flex gap-2">
-                      <Button variant="success" disabled={!secret || busy === x.hash} onClick={() => act(x, "approve")}><Check className="h-4 w-4" />{busy === x.hash ? "Paying… (~20 s)" : `Approve & pay ${usd(x.remainder)}`}</Button>
+                      <Button variant="success" disabled={!secret || busy === x.hash} onClick={() => act(x, "approve")}><Check className="h-4 w-4" />{busy === x.hash ? "Paying… (~20 s)" : `Approve & pay ${usd(x.remainder)}${x.rule.endsWith("_xchain") ? " on Base Sepolia" : ""}`}</Button>
                       <Button variant="secondary" disabled={!secret || busy === x.hash} onClick={() => act(x, "reject")}><X className="h-4 w-4" />Decline</Button>
                     </div>
                   ) : (

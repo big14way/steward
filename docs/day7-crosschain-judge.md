@@ -1,4 +1,4 @@
-# Day 7 — CCTP V2 payout to Base Sepolia + judge mode (code Sep 28, 2026; testnet run pending credentials)
+# Day 7 — CCTP V2 payout to Base Sepolia + judge mode (code Sep 28, 2026; first testnet run Sep 29, 2026)
 
 ## Cross-chain payout
 
@@ -22,10 +22,19 @@ TokenMessengerV2 `0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA` and MessageTransmi
 are the same on both testnets; `minFinalityThreshold` 1000 = Fast, 2000 = Standard; fee schedule at
 `/v2/burn/USDC/fees/26/6`; attestation at `/v2/messages/26?transactionHash=…`.
 
-Still needed from the builder before this path can run: Circle credentials, the owner wallet funded on Arc, and one Developer-Controlled
-wallet on `BASE-SEPOLIA` (`BASE_RELAYER_WALLET_ID`) with gas (or an SCA wallet with Gas Station). Local arc-anvil cannot exercise it,
-so today's proof is limited to the agent's conversion (unit test `test_crosschain_pay_becomes_owner_escalation`) and the API's refusal
-to run it without Circle wallets.
+### Testnet run (Sep 29, 2026)
+
+Freelancer (own wallet `0x3C34…4C51`) requested 0.25 USDC with **Receive on Base Sepolia** from the hosted portal. The agent
+escalated it (`R5_pay_xchain`, escalate tx `0x4f239229…59cc`); the owner approved it from the Approvals inbox, and the one API
+call did the whole path in 23 s:
+
+| Step | Chain | Tx |
+|---|---|---|
+| `approve` + `depositForBurn` from the owner's Circle wallet | Arc Testnet | [`0x45c44615…f42`](https://explorer.testnet.arc.io/tx/0x45c44615164bc5ced86c8431ccefdb5452b2ffd56096126b1c24b937ddf91f42) |
+| attestation | iris-api-sandbox | `complete` within ~10 s (Fast, fee 0) |
+| `receiveMessage` from the relayer (Circle SCA wallet, gas sponsored) | Base Sepolia | [`0x38601eaf…d7f0`](https://sepolia.basescan.org/tx/0x38601eafd631f5d2bd195f21e076930ebcc2cb3d70cc23ba3f243c2f5de7d7f0) |
+
+The relayer is `BASE_RELAYER_WALLET_ID` on the API host; it never held ETH (ERC-4337 via Circle Gas Station).
 
 ## Judge mode
 
