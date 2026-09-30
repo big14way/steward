@@ -146,7 +146,7 @@ Before Tameion: 0. Paying businesses: Acme Studio (launch workspace) and webserv
 | **CCTP V2** | Contractors can be paid on Base Sepolia: owner-approved `depositForBurn` on Arc, attestation, `receiveMessage` on Base. | burn and mint above |
 | **Gas Station** | The Base Sepolia relayer is a Circle smart account; its gas is sponsored, it never held ETH. | mint above (ERC-4337) |
 | **Notifications** | Signed webhooks for every wallet transaction, verified against Circle's public key and stored. | [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md) |
-| **USYC** | Idle owner USDC sits in USYC, Circle's tokenized money-market fund, minted and redeemed through the Teller from the owner's Circle wallet (allowlisted by Circle Sep 30). | mint and redeem above; Treasury page |
+| **USYC** | Idle USDC sits in USYC, Circle's tokenized money-market fund, minted and redeemed through the Teller from Circle wallets that Circle allowlisted: our owner wallet, a customer business, and its contractor. Paused automatically if the testnet price feed goes out of range. | mint and redeem above; Treasury page; contractor page |
 | **Circle Contracts** | The deployed contracts are imported for monitoring. | [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md) |
 | **Arc** | USDC is the gas token, so an owner budgets in dollars only; sub-second finality; the protocol blocklist rejects a forced transfer even if every off-chain control fails. | [Adversarial test](#adversarial-test) |
 | **Canteen RPC** | The agent and API read and write through the per-builder Canteen node. | `agent/config.py` |

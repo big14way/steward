@@ -78,6 +78,12 @@ Circle Support allowlisted three addresses for testnet USYC (owner wallet `0x7bc
 - Product: `api/usyc.py`, `POST /treasury/usyc/deposit|redeem` (owner session), USYC card on the Treasury page. The deployed YieldSweeper's
   vault is immutable (MockUSYC), so the agent reserve moves to USYC at its next redeploy.
 
+- Sep 30 (later): Circle also allowlisted a customer business's owner wallet (webservice co, `0xe3ddcd59…94ee`) and its contractor's
+  wallet (Lela, `0x496e0436…25E2`) after each of them wrote to Circle from their own email. The allowlist check reads Circle's
+  Entitlements (RolesAuthority `0xCC20…6113`): `canCall(account, Teller, deposit.selector)`; the Teller's `maxDeposit` is not an allowlist check.
+- The testnet USYC oracle moved from 1.1387 to 154.35 USDC per USYC the same afternoon. STEWARD pauses USYC deposits and redemptions
+  when the price is outside 0.90 to 2.00 USDC, so nobody buys at a broken price or redeems a windfall.
+
 ## Prior work disclosure
 
 Wallet-creation shape and Circle notification signature verification are adapted from `circlefin/arc-escrow` (Apache-2.0).
