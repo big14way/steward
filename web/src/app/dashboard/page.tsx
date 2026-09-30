@@ -14,7 +14,7 @@ const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sk
 
 export default async function Dashboard() {
   const [s, d, a, t] = await Promise.all([
-    safe(serverGet<Stats>("/stats", "/dashboard"), null as unknown as Stats),
+    safe(serverGet<Stats>("/stats/workspace", "/dashboard"), null as unknown as Stats),
     serverGet<Decision[]>("/decisions?limit=8", "/dashboard").catch(() => [] as Decision[]),
     safe(serverGet<Account>("/account", "/dashboard"), null as unknown as Account),
     safe(serverGet<Treasury>("/treasury", "/dashboard"), null as unknown as Treasury),

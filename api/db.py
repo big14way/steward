@@ -48,27 +48,32 @@ def init() -> None:
                 c.execute(f"ALTER TABLE treasury ADD COLUMN {col} {typ}")
 
 
-def stats() -> dict:
-    """Exactly the README table columns, so the table is a copy-paste."""
+def stats(ids: set[int] | None = None, include_treasury: bool = True) -> dict:
+    """Exactly the README table columns, so the table is a copy-paste. `ids` limits it to one workspace's budgets."""
+    if ids is None:
+        f, fd, a = "", "", []
+    else:
+        marks = ",".join("?" * len(ids)) or "NULL"
+        f, fd, a = f" AND allowance_id IN ({marks})", f" AND d.allowance_id IN ({marks})", sorted(ids)
     with conn() as c:
-        def q(s, *a):
-            return c.execute(s, a).fetchone()[0]
-        by = {r["action"]: r["n"] for r in c.execute("SELECT action, COUNT(*) n FROM decisions GROUP BY action")}
-        esc = q("SELECT COUNT(*) FROM decisions WHERE action IN ('ESCALATE','PARTIAL','SCREEN_FAIL') AND human_agreed IS NOT NULL")
-        agreed = q("SELECT COUNT(*) FROM decisions WHERE human_agreed=1")
-        paid = q("SELECT COUNT(*) FROM milestones WHERE status IN ('paid','partial')")
+        def q(sql, *args):
+            return c.execute(sql, args).fetchone()[0]
+        by = {r["action"]: r["n"] for r in c.execute("SELECT action, COUNT(*) n FROM decisions WHERE 1=1" + f + " GROUP BY action", a)}
+        esc = q("SELECT COUNT(*) FROM decisions WHERE action IN ('ESCALATE','PARTIAL','SCREEN_FAIL') AND human_agreed IS NOT NULL" + f, *a)
+        agreed = q("SELECT COUNT(*) FROM decisions WHERE human_agreed=1" + f, *a)
+        paid = q("SELECT COUNT(*) FROM milestones WHERE status IN ('paid','partial')" + f, *a)
         # on-time = a PAY/PARTIAL landed within 24 h of the milestone being submitted
-        on_time_den = q("SELECT COUNT(*) FROM decisions d JOIN milestones m ON m.id=d.milestone_id WHERE d.pay_tx IS NOT NULL")
-        on_time_num = q("SELECT COUNT(*) FROM decisions d JOIN milestones m ON m.id=d.milestone_id WHERE d.pay_tx IS NOT NULL AND d.created_at - m.created_at <= 86400")
+        on_time_den = q("SELECT COUNT(*) FROM decisions d JOIN milestones m ON m.id=d.milestone_id WHERE d.pay_tx IS NOT NULL" + fd, *a)
+        on_time_num = q("SELECT COUNT(*) FROM decisions d JOIN milestones m ON m.id=d.milestone_id WHERE d.pay_tx IS NOT NULL AND d.created_at - m.created_at <= 86400" + fd, *a)
         usdc_paid = q("""SELECT COALESCE(SUM(CASE WHEN pay_tx IS NOT NULL THEN amount ELSE 0 END),0)
-                              + COALESCE(SUM(CASE WHEN approved_tx IS NOT NULL THEN remainder ELSE 0 END),0) FROM decisions""")
-        swept = q("SELECT COALESCE(SUM(assets),0) FROM treasury WHERE action='SWEEP'")
+                              + COALESCE(SUM(CASE WHEN approved_tx IS NOT NULL THEN remainder ELSE 0 END),0) FROM decisions WHERE 1=1""" + f, *a)
+        swept = q("SELECT COALESCE(SUM(assets),0) FROM treasury WHERE action='SWEEP'") if include_treasury else 0
         return {
-            "allowances": q("SELECT COUNT(DISTINCT allowance_id) FROM milestones"),
-            "payers": q("SELECT COUNT(*) FROM payers"),
-            "contractors": q("SELECT COUNT(DISTINCT payee) FROM milestones"),
+            "allowances": q("SELECT COUNT(DISTINCT allowance_id) FROM milestones WHERE 1=1" + f, *a),
+            "payers": q("SELECT COUNT(*) FROM payers") if ids is None else 1,
+            "contractors": q("SELECT COUNT(DISTINCT payee) FROM milestones WHERE 1=1" + f, *a),
             "usdc_paid": usdc_paid / 1e6,
-            "decisions": q("SELECT COUNT(*) FROM decisions"),
+            "decisions": q("SELECT COUNT(*) FROM decisions WHERE 1=1" + f, *a),
             "by_action": {k: by.get(k, 0) for k in ("PAY", "PARTIAL", "HOLD", "ESCALATE", "SCREEN_FAIL")},
             "human_agreed_pct": round(100 * agreed / esc, 1) if esc else None,
             "on_time_pct": round(100 * on_time_num / on_time_den, 1) if on_time_den else None,

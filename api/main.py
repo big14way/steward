@@ -437,6 +437,17 @@ def get_allowance(id: int, p: dict = Depends(viewer)):
     return {"id": id, **_allowance(id)}
 
 
+@app.get("/stats/workspace")
+def workspace_stats(p: dict = Depends(viewer)):
+    """The dashboard's numbers for the caller's own workspace (the public /stats is platform-wide)."""
+    ids = _scope(p)
+    s = db.stats(ids, include_treasury=(p.get("workspace_id") or 1) == 1)
+    s["allowances"] = len(ids) if ids is not None else s["allowances"]
+    if ids is not None:
+        s["contractors"] = len({_allowance(i)["payee"].lower() for i in ids})
+    return s
+
+
 @app.get("/stats")
 def stats():
     """DB-derived numbers, with allowances / contractors taken from the chain so allowances without milestones yet still count."""
