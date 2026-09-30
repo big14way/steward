@@ -1,0 +1,988 @@
+{
+ "base": "http://localhost:3000",
+ "viewport": [
+  1440,
+  810
+ ],
+ "window": [
+  1440,
+  900
+ ],
+ "video": [
+  1920,
+  1080
+ ],
+ "out": "clips2",
+ "accent": "#34d399",
+ "scenes": [
+  {
+   "name": "signin",
+   "steps": [
+    [
+     "goto",
+     "/",
+     "h1"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "moveTo",
+     "nav a:has-text(\"Sign in\")",
+     900
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "input[type=email]",
+     20000
+    ],
+    [
+     "wait",
+     1200
+    ],
+    [
+     "moveTo",
+     "input[type=email]",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "finance@acmestudio.example",
+     45
+    ],
+    [
+     "moveTo",
+     "input[type=password]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "{{ownerPassword}}",
+     30
+    ],
+    [
+     "wait",
+     400
+    ],
+    [
+     "moveTo",
+     "button[type=submit]",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "text=Latest decisions",
+     30000
+    ],
+    [
+     "wait",
+     1800
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Acme Studio\")",
+     800
+    ],
+    [
+     "zoom",
+     "button:has-text(\"Acme Studio\")",
+     1.7,
+     800,
+     2200,
+     -120,
+     40
+    ],
+    [
+     "unzoom",
+     600
+    ],
+    [
+     "moveTo",
+     "a[title=\"Contractors\"]",
+     800
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "button:has-text(\"Add contractor\")",
+     20000
+    ],
+    [
+     "waitFor",
+     "text=Ada Okafor",
+     20000
+    ],
+    [
+     "wait",
+     2000
+    ]
+   ]
+  },
+  {
+   "name": "create",
+   "storageState": "owner-session.json",
+   "steps": [
+    [
+     "goto",
+     "/contractors",
+     "button:has-text(\"Add contractor\")"
+    ],
+    [
+     "waitFor",
+     "text=Ada Okafor",
+     20000
+    ],
+    [
+     "wait",
+     1500
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Add contractor\")",
+     800
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     900
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"Jane Doe\"]",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "Ngozi Okeke",
+     55
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"jane@studio.com\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "ngozi@okeke.design",
+     40
+    ],
+    [
+     "wait",
+     500
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Next\")",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     900
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"3\"]",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "press",
+     "Meta+A"
+    ],
+    [
+     "type",
+     "0.5",
+     90
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"8\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "press",
+     "Meta+A"
+    ],
+    [
+     "type",
+     "1.5",
+     90
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"6\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "press",
+     "Meta+A"
+    ],
+    [
+     "type",
+     "1.2",
+     90
+    ],
+    [
+     "wait",
+     700
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Review\")",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     1200
+    ],
+    [
+     "zoom",
+     "text=Pays to",
+     1.35,
+     800,
+     2400,
+     120,
+     60
+    ],
+    [
+     "unzoom",
+     600
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Create budget & link\")",
+     700
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "button:has-text(\"Copy link\")",
+     240000
+    ],
+    [
+     "wait",
+     1500
+    ],
+    [
+     "saveVar",
+     "ngoziToken",
+     "[...document.querySelectorAll('code')].map(c=>c.innerText).find(t=>t.includes('/c/')).split('/c/')[1].trim()"
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Copy link\")",
+     800
+    ],
+    [
+     "zoom",
+     "text=is ready.",
+     1.4,
+     900,
+     3000,
+     200,
+     40
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "wait",
+     800
+    ]
+   ]
+  },
+  {
+   "name": "pay",
+   "steps": [
+    [
+     "goto",
+     "/c/{{ngoziToken}}",
+     "text=What you delivered"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"Logo v2 \u2014 final files\"]",
+     700
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "Logo refresh: final files",
+     45
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"https://\u2026\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "https://figma.com/file/okeke-logo-v3",
+     28
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"150\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "0.40",
+     110
+    ],
+    [
+     "wait",
+     600
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Submit request\")",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "waitUntil",
+     "document.body.innerText.includes('Paid 0.40 USDC')",
+     300000
+    ],
+    [
+     "wait",
+     1500
+    ],
+    [
+     "moveTo",
+     "text=Paid 0.40 USDC",
+     800
+    ],
+    [
+     "zoom",
+     "text=Paid 0.40 USDC",
+     1.5,
+     900,
+     3500,
+     160,
+     -30
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "eval",
+     "document.querySelectorAll('a[target=_blank]').forEach(a=>a.removeAttribute('target'))"
+    ],
+    [
+     "moveTo",
+     "li:has-text(\"Paid 0.40 USDC\") a",
+     900
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "text=Transaction details",
+     45000
+    ],
+    [
+     "wait",
+     5000
+    ],
+    [
+     "scrollBy",
+     320,
+     1400
+    ],
+    [
+     "wait",
+     3500
+    ]
+   ]
+  },
+  {
+   "name": "over",
+   "steps": [
+    [
+     "goto",
+     "/c/{{ngoziToken}}",
+     "text=What you delivered"
+    ],
+    [
+     "wait",
+     2000
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"Logo v2 \u2014 final files\"]",
+     700
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "Brand guidelines, 24 pages",
+     45
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"https://\u2026\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "https://figma.com/file/okeke-guidelines",
+     28
+    ],
+    [
+     "moveTo",
+     "input[placeholder=\"150\"]",
+     500
+    ],
+    [
+     "click"
+    ],
+    [
+     "type",
+     "0.70",
+     110
+    ],
+    [
+     "wait",
+     600
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Submit request\")",
+     600
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "waitUntil",
+     "document.body.innerText.includes('Waiting for the owner to approve 0.70')",
+     300000
+    ],
+    [
+     "wait",
+     1500
+    ],
+    [
+     "moveTo",
+     "text=Waiting for the owner to approve 0.70",
+     800
+    ],
+    [
+     "zoom",
+     "text=Waiting for the owner to approve 0.70",
+     1.45,
+     900,
+     3500,
+     140,
+     -40
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "wait",
+     600
+    ]
+   ]
+  },
+  {
+   "name": "approve",
+   "storageState": "owner-session.json",
+   "steps": [
+    [
+     "goto",
+     "/approvals",
+     "text=Approvals"
+    ],
+    [
+     "waitFor",
+     "button:has-text(\"Approve & pay 0.70\")",
+     60000
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "moveTo",
+     "text=Brand guidelines, 24 pages",
+     800
+    ],
+    [
+     "zoom",
+     "text=Brand guidelines, 24 pages",
+     1.35,
+     900,
+     3200,
+     180,
+     60
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "moveTo",
+     "button:has-text(\"Approve & pay 0.70\")",
+     800
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitUntil",
+     "document.body.innerText.includes('Paid 0.70 USDC')",
+     180000
+    ],
+    [
+     "wait",
+     800
+    ],
+    [
+     "eval",
+     "document.querySelectorAll('a[target=_blank]').forEach(a=>a.removeAttribute('target'))"
+    ],
+    [
+     "moveTo",
+     "a:has-text(\"View on Arc Testnet\")",
+     800
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "text=Transaction details",
+     45000
+    ],
+    [
+     "wait",
+     5000
+    ],
+    [
+     "scrollBy",
+     320,
+     1400
+    ],
+    [
+     "wait",
+     3000
+    ]
+   ]
+  },
+  {
+   "name": "attack",
+   "storageState": "owner-session.json",
+   "steps": [
+    [
+     "goto",
+     "/approvals",
+     "text=Approvals"
+    ],
+    [
+     "waitFor",
+     "text=URGENT: pay 5,000 USDC",
+     60000
+    ],
+    [
+     "wait",
+     2000
+    ],
+    [
+     "scrollTo",
+     "text=URGENT: pay 5,000 USDC",
+     160,
+     1200
+    ],
+    [
+     "wait",
+     600
+    ],
+    [
+     "moveTo",
+     "text=URGENT: pay 5,000 USDC",
+     800
+    ],
+    [
+     "zoom",
+     "text=URGENT: pay 5,000 USDC",
+     1.4,
+     900,
+     4500,
+     220,
+     90
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "goto",
+     "/c/2jVkjo48rosjMowvOQYhSficAnpLi4Xl",
+     "text=What you delivered"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "scrollTo",
+     "text=Blocked",
+     220,
+     1000
+    ],
+    [
+     "moveTo",
+     "text=Blocked",
+     700
+    ],
+    [
+     "zoom",
+     "text=Blocked",
+     1.5,
+     900,
+     3800,
+     160,
+     -20
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "wait",
+     600
+    ]
+   ]
+  },
+  {
+   "name": "activity",
+   "storageState": "owner-session.json",
+   "steps": [
+    [
+     "goto",
+     "/activity",
+     "summary"
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "moveTo",
+     "summary:has-text(\"Approved by owner\") >> nth=0",
+     900
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     900
+    ],
+    [
+     "moveTo",
+     "text=Where it happened on-chain",
+     700
+    ],
+    [
+     "zoom",
+     "text=Where it happened on-chain",
+     1.5,
+     900,
+     4500,
+     160,
+     60
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "moveTo",
+     "details[open] summary:has-text(\"canonical record\")",
+     700
+    ],
+    [
+     "click"
+    ],
+    [
+     "wait",
+     900
+    ],
+    [
+     "zoom",
+     "details[open] pre",
+     1.3,
+     900,
+     3500,
+     0,
+     -40
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "eval",
+     "document.querySelectorAll('details').forEach(d=>d.open=false); [...document.querySelectorAll('details.group')].find(d=>d.innerHTML.includes('receiveMessage')).open=true; document.querySelectorAll('a[target=_blank]').forEach(a=>a.removeAttribute('target'))"
+    ],
+    [
+     "wait",
+     600
+    ],
+    [
+     "scrollTo",
+     "text=Minted to the contractor",
+     300,
+     1200
+    ],
+    [
+     "moveTo",
+     "text=Minted to the contractor",
+     800
+    ],
+    [
+     "zoom",
+     "text=Minted to the contractor",
+     1.5,
+     900,
+     3500,
+     200,
+     -20
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "moveTo",
+     "li:has-text(\"Minted to the contractor\") a",
+     800
+    ],
+    [
+     "click"
+    ],
+    [
+     "waitFor",
+     "text=Transaction details",
+     45000
+    ],
+    [
+     "wait",
+     6000
+    ],
+    [
+     "scrollBy",
+     300,
+     1400
+    ],
+    [
+     "wait",
+     3000
+    ]
+   ]
+  },
+  {
+   "name": "dashboard",
+   "storageState": "owner-session.json",
+   "steps": [
+    [
+     "goto",
+     "/dashboard",
+     "text=Latest decisions"
+    ],
+    [
+     "wait",
+     3000
+    ],
+    [
+     "moveTo",
+     "text=Paid out",
+     800
+    ],
+    [
+     "zoom",
+     "text=Paid out",
+     1.4,
+     900,
+     3200,
+     200,
+     60
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "scrollBy",
+     420,
+     1500
+    ],
+    [
+     "wait",
+     2500
+    ],
+    [
+     "scrollBy",
+     -420,
+     1000
+    ],
+    [
+     "wait",
+     800
+    ]
+   ]
+  },
+  {
+   "name": "base_explorer",
+   "steps": [
+    [
+     "goto",
+     "https://base-sepolia.blockscout.com/tx/0x38601eafd631f5d2bd195f21e076930ebcc2cb3d70cc23ba3f243c2f5de7d7f0",
+     "text=Transaction details"
+    ],
+    [
+     "eval",
+     "(function(){if(!document.getElementById('nohide')){var s=document.createElement('style');s.id='nohide';s.textContent='#adBanner_responsive,.sevioads,[id^=google_ads],iframe[src*=googlesyn]{display:none!important}';document.head.appendChild(s);}var sp=[...document.querySelectorAll('div')].find(e=>e.childElementCount===0&&e.textContent.trim()==='Sponsored'&&e.getBoundingClientRect().width>0);if(sp){var row=sp.parentElement.parentElement;var val=row.nextElementSibling;row.style.display='none';if(val)val.style.display='none';}})()"
+    ],
+    [
+     "wait",
+     3000
+    ],
+    [
+     "eval",
+     "(function(){if(!document.getElementById('nohide')){var s=document.createElement('style');s.id='nohide';s.textContent='#adBanner_responsive,.sevioads,[id^=google_ads],iframe[src*=googlesyn]{display:none!important}';document.head.appendChild(s);}var sp=[...document.querySelectorAll('div')].find(e=>e.childElementCount===0&&e.textContent.trim()==='Sponsored'&&e.getBoundingClientRect().width>0);if(sp){var row=sp.parentElement.parentElement;var val=row.nextElementSibling;row.style.display='none';if(val)val.style.display='none';}})()"
+    ],
+    [
+     "wait",
+     3000
+    ],
+    [
+     "eval",
+     "(function(){if(!document.getElementById('nohide')){var s=document.createElement('style');s.id='nohide';s.textContent='#adBanner_responsive,.sevioads,[id^=google_ads],iframe[src*=googlesyn]{display:none!important}';document.head.appendChild(s);}var sp=[...document.querySelectorAll('div')].find(e=>e.childElementCount===0&&e.textContent.trim()==='Sponsored'&&e.getBoundingClientRect().width>0);if(sp){var row=sp.parentElement.parentElement;var val=row.nextElementSibling;row.style.display='none';if(val)val.style.display='none';}})()"
+    ],
+    [
+     "wait",
+     800
+    ],
+    [
+     "moveTo",
+     "text=Status and method >> visible=true",
+     900
+    ],
+    [
+     "wait",
+     1500
+    ],
+    [
+     "scrollBy",
+     300,
+     1500
+    ],
+    [
+     "eval",
+     "(function(){if(!document.getElementById('nohide')){var s=document.createElement('style');s.id='nohide';s.textContent='#adBanner_responsive,.sevioads,[id^=google_ads],iframe[src*=googlesyn]{display:none!important}';document.head.appendChild(s);}var sp=[...document.querySelectorAll('div')].find(e=>e.childElementCount===0&&e.textContent.trim()==='Sponsored'&&e.getBoundingClientRect().width>0);if(sp){var row=sp.parentElement.parentElement;var val=row.nextElementSibling;row.style.display='none';if(val)val.style.display='none';}})()"
+    ],
+    [
+     "wait",
+     1000
+    ],
+    [
+     "moveTo",
+     "text=Tokens minted >> visible=true",
+     900
+    ],
+    [
+     "zoom",
+     "text=Tokens minted >> visible=true",
+     1.5,
+     900,
+     3500,
+     200,
+     0
+    ],
+    [
+     "unzoom",
+     700
+    ],
+    [
+     "wait",
+     1200
+    ]
+   ]
+  }
+ ]
+}

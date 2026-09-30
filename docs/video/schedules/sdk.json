@@ -1,0 +1,78 @@
+[
+ {
+  "t": 0.5,
+  "html": "<span class=\"p\">➜</span> <span class=\"dim\">my-agent</span> cat agent.ts",
+  "type": true,
+  "cps": 45
+ },
+ {
+  "t": 1.7666666666666666,
+  "html": "<span class=\"kw\">import</span> { Steward } <span class=\"kw\">from</span> <span class=\"str\">\"steward-sdk\"</span>;"
+ },
+ {
+  "t": 2.046666666666667,
+  "html": "&nbsp;"
+ },
+ {
+  "t": 2.326666666666667,
+  "html": "<span class=\"kw\">const</span> s = <span class=\"kw\">new</span> <span class=\"fn\">Steward</span>({ allowanceManager, auditLog, account: agent });"
+ },
+ {
+  "t": 2.6066666666666674,
+  "html": "&nbsp;"
+ },
+ {
+  "t": 2.8866666666666676,
+  "html": "<span class=\"cm\">// rules, canonical hash, AuditLog.record(), then pay() or escalate()</span>"
+ },
+ {
+  "t": 3.166666666666668,
+  "html": "<span class=\"kw\">const</span> r = <span class=\"kw\">await</span> s.<span class=\"fn\">decide</span>({"
+ },
+ {
+  "t": 3.446666666666668,
+  "html": "  allowanceId: 0n, amount: 150_000_000n, memo: <span class=\"str\">\"logo v2\"</span>,"
+ },
+ {
+  "t": 3.7266666666666683,
+  "html": "  inputs: { milestone: <span class=\"str\">\"logo v2\"</span>, evidence: <span class=\"str\">\"ipfs://…\"</span> }, evidence: <span class=\"kw\">true</span>, screenOk: <span class=\"kw\">true</span>,"
+ },
+ {
+  "t": 4.006666666666669,
+  "html": "  reason: llmText,   <span class=\"cm\">// your model writes the reason, never the amount</span>"
+ },
+ {
+  "t": 4.286666666666669,
+  "html": "});"
+ },
+ {
+  "t": 4.566666666666669,
+  "html": "console.<span class=\"fn\">log</span>(r.action, r.hash, r.payTx ?? r.escalateTx);"
+ },
+ {
+  "t": 6.0466666666666695,
+  "html": "<span class=\"p\">➜</span> <span class=\"dim\">packages/steward-sdk</span> node --test test/hash.test.mjs",
+  "type": true,
+  "cps": 45
+ },
+ {
+  "t": 7.613333333333337,
+  "html": "<span class=\"ok\">✓</span> canonical JSON is sorted and compact"
+ },
+ {
+  "t": 8.213333333333336,
+  "html": "<span class=\"ok\">✓</span> decision hash matches the Python SDK"
+ },
+ {
+  "t": 8.813333333333336,
+  "html": "<span class=\"ok\">✓</span> remainder hash matches the Python SDK"
+ },
+ {
+  "t": 9.413333333333336,
+  "html": "<span class=\"ok\">✓</span> rules: LLM never sets amounts"
+ },
+ {
+  "t": 10.013333333333335,
+  "html": "<span class=\"ok\"># pass 4  # fail 0</span>"
+ }
+]

@@ -1,0 +1,54 @@
+[
+ {
+  "t": 0.5,
+  "html": "<span class=\"p\">➜</span> <span class=\"dim\">contracts</span> arc-forge test --match-test test_arc_payToBlocklistedPayeeReverts --fork-url $ARC_RPC -vvvv",
+  "type": true,
+  "cps": 45
+ },
+ {
+  "t": 3.422222222222222,
+  "html": "Ran 1 test for test/AllowanceManager.t.sol:ArcForkTest"
+ },
+ {
+  "t": 4.122222222222222,
+  "html": "<span class=\"ok\">[PASS] test_arc_payToBlocklistedPayeeReverts()</span>"
+ },
+ {
+  "t": 4.822222222222222,
+  "html": "<span class=\"fn\">  AllowanceManager::pay(0, 100000000, 0xe0770d5f…6cf6, \"should never land\")</span>"
+ },
+ {
+  "t": 5.522222222222222,
+  "html": "    USDC 0x3600…0000::transfer(0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 100000000)"
+ },
+ {
+  "t": 6.222222222222222,
+  "html": "      0x1800…0000::transfer(AllowanceManager, 0x7099…79C8, 1e20)"
+ },
+ {
+  "t": 6.9222222222222225,
+  "html": "<span class=\"bad\">        ← [Revert] Blocked address</span>"
+ },
+ {
+  "t": 7.622222222222223,
+  "html": "<span class=\"bad\">  ← [Revert] Blocked address</span>"
+ },
+ {
+  "t": 8.322222222222223,
+  "html": "<span class=\"ok\">Suite result: ok. 1 passed; 0 failed; live Arc Testnet fork</span>"
+ },
+ {
+  "t": 9.522222222222222,
+  "html": "<span class=\"p\">➜</span> <span class=\"dim\"></span> curl -X POST $API/escalations/0x5582…fc91/approve -d '{\"owner_secret\":\"…\"}'",
+  "type": true,
+  "cps": 45
+ },
+ {
+  "t": 12.088888888888889,
+  "html": "<span class=\"bad\">{\"detail\":\"screen failures cannot be approved\"}</span>"
+ },
+ {
+  "t": 12.88888888888889,
+  "html": "<span class=\"bad\">http 400</span>"
+ }
+]
