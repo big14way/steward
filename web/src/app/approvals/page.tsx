@@ -4,7 +4,8 @@ import { Inbox, ArrowUpRight, ShieldAlert, Check, X, Send } from "lucide-react";
 import Link from "next/link";
 import { get, post, usd, tx, ago, short, ruleText, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone, type Account } from "@/lib/api";
 import { useSession } from "../session";
-import { Avatar, Button, EmptyState, PageHeader, Pill, Skeleton, TxLink, useToast, Card } from "../ui";
+import { Avatar, Button, EmptyState, PageHeader, Pill, Skeleton, TxLink, useToast, Card, Modal } from "../ui";
+import CopyButton from "../copy-button";
 
 type Item = Decision & { milestone?: Milestone };
 
@@ -17,11 +18,17 @@ export default function Page() {
   const [names, setNames] = useState<Record<number, Contractor>>({});
   const [tg, setTg] = useState<Account["telegram"] | null>(null);
   useEffect(() => { if (me) get<Account>("/account").then((a) => setTg(a.telegram ?? null)).catch(() => {}); }, [me]);
+  const [tgLink, setTgLink] = useState<{ url: string; bot: string; code: string } | null>(null);
   const connectTelegram = async () => {
-    const r = await post<{ url?: string; detail?: string }>("/telegram/link-code", {});
-    if (r.ok && r.data.url) { window.open(r.data.url, "_blank"); toast.push("ok", "Press Start in Telegram to connect. Approval requests will arrive there."); }
+    const r = await post<{ url?: string; bot?: string; code?: string; detail?: string }>("/telegram/link-code", {});
+    if (r.ok && r.data.url && r.data.code) setTgLink({ url: r.data.url, bot: r.data.bot ?? "", code: r.data.code });
     else toast.push("err", r.data.detail ?? "Could not start the Telegram link.");
   };
+  useEffect(() => {   // once connected, close the dialog and show the pill
+    if (!tgLink) return;
+    const t = setInterval(() => get<Account>("/account").then((a) => { if (a.telegram?.connected) { setTg(a.telegram); setTgLink(null); toast.push("ok", "Telegram connected. Approval requests will arrive there."); } }).catch(() => {}), 3000);
+    return () => clearInterval(t);
+  }, [tgLink, toast]);
 
   const load = useCallback(async () => {
     const es = await get<Decision[]>("/escalations").catch(() => [] as Decision[]);
@@ -42,6 +49,18 @@ export default function Page() {
 
   return (
     <div className="max-w-3xl">
+      <Modal open={!!tgLink} onClose={() => setTgLink(null)} title="Get approvals on Telegram">
+        {tgLink && (
+          <ol className="space-y-4 text-sm">
+            <li><div className="font-medium">1 · Open the bot</div>
+              <a href={tgLink.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-500 text-zinc-950 px-3 py-1.5 font-medium hover:bg-emerald-400"><Send className="h-4 w-4" />Open @{tgLink.bot}</a>
+              <p className="mt-1 text-xs text-zinc-500">Press Start. If it connects, this window closes by itself.</p></li>
+            <li><div className="font-medium">2 · If it only says hello, send it this message</div>
+              <div className="mt-2 flex items-center gap-2"><code className="rounded bg-zinc-900 border border-zinc-800 px-2 py-1 font-mono">/connect {tgLink.code}</code><CopyButton text={`/connect ${tgLink.code}`} /></div>
+              <p className="mt-1 text-xs text-zinc-500">The code works once and expires in 30 minutes.</p></li>
+          </ol>
+        )}
+      </Modal>
       <PageHeader title="Approvals" description="Requests the agent would not pay on its own. Approving pays from your Circle wallet in one transaction — it bypasses the agent's caps but never the funding, the kill switch, or the one-hash-pays-once rule."
         action={tg?.available && me?.role === "owner" ? (tg.connected
           ? <Pill tone="emerald"><Send className="h-3 w-3 mr-1" />Telegram connected</Pill>

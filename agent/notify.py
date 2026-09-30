@@ -71,11 +71,28 @@ async def _on_button(update, context) -> None:
 
 
 async def _on_start(update, context) -> None:
-    """/start <code> from a workspace's one-time link: connect this chat to that workspace."""
-    code = (context.args or [""])[0]
+    """/start <code> (deep link) or /connect <code> (typed): connect this chat to that workspace."""
+    code = (context.args or [""])[0].strip()
     if not code:
-        await update.message.reply_text("Hi, I'm the STEWARD bot. Connect me from your STEWARD dashboard (Approvals → Get approvals on Telegram).")
+        await update.message.reply_text("Hi, I'm the STEWARD bot. In your STEWARD dashboard open Approvals → Get approvals on Telegram, "
+                                        "then send me the message it shows, for example: /connect 1A2B3C4D")
         return
+    await _link(update, code)
+
+
+async def _on_text(update, context) -> None:
+    """A pasted code without the command also works."""
+    import re
+    txt = (update.message.text or "").strip()
+    m = re.fullmatch(r"(?:/connect\s+)?([0-9A-Fa-f]{8})", txt)
+    if m:
+        await _link(update, m.group(1))
+    else:
+        await update.message.reply_text("To connect, send the message shown in your STEWARD dashboard, for example: /connect 1A2B3C4D")
+
+
+async def _link(update, code: str) -> None:
+    code = code.upper()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(f"{API_BASE}/telegram/link", json={"code": code, "chat_id": str(update.effective_chat.id)}, headers=_H)
     if r.status_code == 200:
@@ -91,9 +108,11 @@ async def start() -> None:
     if not enabled():
         log.info("telegram disabled (no TELEGRAM_TOKEN); escalations go to the log")
         return
-    from telegram.ext import Application, CallbackQueryHandler, CommandHandler
+    from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
     _app = Application.builder().token(TELEGRAM_TOKEN).build()
     _app.add_handler(CommandHandler("start", _on_start))
+    _app.add_handler(CommandHandler("connect", _on_start))
+    _app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _on_text))
     _app.add_handler(CallbackQueryHandler(_on_button))
     await _app.initialize()
     await _app.start()

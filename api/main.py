@@ -144,11 +144,11 @@ def telegram_link_code(request: Request):
     if not bot:
         raise HTTPException(503, "Telegram isn't set up on this deployment yet.")
     import secrets as _s
-    code = _s.token_urlsafe(12)
+    code = _s.token_hex(4).upper()   # short enough to type: 8 hex characters, valid for 30 minutes
     with db.conn() as c:
         c.execute("DELETE FROM telegram_links WHERE created_at < ?", (int(time.time()) - 1800,))
         c.execute("INSERT INTO telegram_links(code,workspace_id,created_at) VALUES(?,?,?)", (code, p.get("workspace_id") or 1, int(time.time())))
-    return {"url": f"https://t.me/{bot}?start={code}", "bot": bot}
+    return {"url": f"https://t.me/{bot}?start={code}", "bot": bot, "code": code}
 
 
 class TelegramLinkIn(BaseModel):
