@@ -1,4 +1,4 @@
-# Pitch video (2:59)
+# Pitch video (2:59) · [watch on YouTube](https://youtu.be/2pqqzNq5C8o)
 
 Built with the pitch-video pipeline: `docs/video/scenes.json` records the live product with Playwright (owner scenes use a real signed-in session; the password comes from a local, untracked vars file), `docs/video/demo.json` cuts it with narration. The MP4 is not in git.
 

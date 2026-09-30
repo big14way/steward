@@ -8,7 +8,7 @@ Numbers are from `GET /stats` on **Sep 30, 2026 (evening)**; refresh them from t
 - **Project:** STEWARD: let your AI agent pay people, within limits it can't cross.
 - **GitHub:** https://github.com/big14way/steward
 - **Live app:** https://steward-arc.vercel.app (judges: *Try the live demo*)
-- **Video (under 3 min):** _add the YouTube/Loom link_
+- **Video (under 3 min):** https://youtu.be/2pqqzNq5C8o
 - **SDK:** npm `steward-arc-sdk` · PyPI `steward-sdk`
 
 ## One-liner

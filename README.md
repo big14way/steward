@@ -9,7 +9,7 @@ nothing to install for the people being paid.
 > Tameion Agents Hackathon (Canteen × Circle × Arc) · RFB 03 / 04 / 01 · Sep 27 – Oct 10, 2026
 >
 > **Live app:** [steward-arc.vercel.app](https://steward-arc.vercel.app) · **API:** [health](https://api-production-c6a14.up.railway.app/health) ·
-> **Video:** 3-minute walkthrough linked in the submission (script: [docs/video/narration.md](docs/video/narration.md)) ·
+> **Video:** [3-minute walkthrough on YouTube](https://youtu.be/2pqqzNq5C8o) (script: [docs/video/narration.md](docs/video/narration.md)) ·
 > **Circle integration ledger:** [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md)
 
 ![STEWARD dashboard](web/public/shots/dashboard.jpg)
@@ -225,7 +225,8 @@ Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) an
 |---|---|
 | Contracts deployed; 46 contract tests, 20 agent tests, 4 SDK tests | Agent reserve contract onto USYC (its vault is fixed at deploy; the owner wallet already holds real USYC) |
 | Hosted app with self-serve sign-up (a workspace and Circle wallet per business), owner sign-in, demo role, contractor links | Two-factor sign-in; more real businesses |
-| Agent paying real contractors on Arc through Circle wallets, reasons written by Claude Sonnet 5.5 | Telegram approvals (built; needs a bot token) |
+| Approvals on Telegram per business ([@STEWARD_Approvals_bot](https://t.me/STEWARD_Approvals_bot)): each workspace connects its own chat, and a tap only acts on that workspace's budgets | |
+| Agent paying real contractors on Arc through Circle wallets, reasons written by Claude Sonnet 5.5 | |
 | CCTP payout to Base Sepolia, Gas Station relayer, signed webhooks | Integrators beyond our own agent |
 | Adversarial test on the live product and on a testnet fork | |
 | SDK published: [npm `steward-arc-sdk`](https://www.npmjs.com/package/steward-arc-sdk), [PyPI `steward-sdk`](https://pypi.org/project/steward-sdk/) | |
