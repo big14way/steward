@@ -2,25 +2,26 @@
 // next to the Next.js server, which avoids a round trip through the public hostname (and any DNS/tunnel quirks).
 // Browser: same-origin "/api" (proxied by next.config.ts rewrites) unless NEXT_PUBLIC_API points elsewhere.
 // Server components: API_INTERNAL directly.
-const PUBLIC_API = process.env.NEXT_PUBLIC_API || "/api";
+export const PUBLIC_API = process.env.NEXT_PUBLIC_API || "/api";
 const API = typeof window === "undefined" ? (process.env.API_INTERNAL ?? (PUBLIC_API.startsWith("/") ? "http://127.0.0.1:8001" : PUBLIC_API)) : PUBLIC_API;
 export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://explorer.testnet.arc.io";
 export const BASE_SEPOLIA_EXPLORER = "https://sepolia.basescan.org";
 
 export const get = <T,>(p: string, headers: Record<string, string> = {}) =>
-  fetch(`${API}${p}`, { cache: "no-store", headers }).then(async (r) => {
+  fetch(`${API}${p}`, { cache: "no-store", headers, credentials: "include" }).then(async (r) => {
     if (!r.ok) throw new Error(`${r.status}`);
     return (await r.json()) as T;
   });
 export const post = <T,>(p: string, body: unknown) =>
-  fetch(`${API}${p}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+  fetch(`${API}${p}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), credentials: "include" })
     .then(async (r) => ({ ok: r.ok, status: r.status, data: (await r.json().catch(() => ({}))) as T }));
 
 export const usd = (n: number) => (n / 1e6).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const tx = (h?: string | null) => (h ? `${EXPLORER}/tx/${h}` : "#");
+export const txOn = (h: string, chain: "arc" | "base-sepolia" = "arc") => (chain === "arc" ? `${EXPLORER}/tx/${h}` : `${BASE_SEPOLIA_EXPLORER}/tx/${h}`);
 export const addr = (a?: string | null) => (a ? `${EXPLORER}/address/${a}` : "#");
 export const short = (h?: string | null, n = 6) => (h ? `${h.slice(0, 2 + n)}…${h.slice(-4)}` : "");
-export const when = (t?: number | null) => (t ? new Date(t * 1000).toLocaleString() : "");
+export const when = (t?: number | null) => (t ? new Date(t * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
 export const ago = (t?: number | null) => {
   if (!t) return "";
   const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
@@ -31,14 +32,11 @@ export const ago = (t?: number | null) => {
 };
 export const periodLabel = (s: number) => (s === 0 ? "no reset" : s === 86400 ? "per day" : s === 604800 ? "per week" : s === 2592000 ? "per month" : `per ${s}s`);
 
-// ---- owner sign-in (stored once in this browser) ----
-export const OWNER_KEY = "steward.owner_secret";
-export const getOwnerSecret = () => { try { return localStorage.getItem(OWNER_KEY) ?? ""; } catch { return ""; } };
-export const setOwnerSecret = (s: string) => { try { s ? localStorage.setItem(OWNER_KEY, s) : localStorage.removeItem(OWNER_KEY); } catch {} };
-export const JUDGE_SECRET = process.env.NEXT_PUBLIC_JUDGE_SECRET ?? "";
-/** Demo access (scoped approve/decline secret) is offered only when the deployment enables it. */
+// ---- sessions ----
+// Owners sign in with email + password (HttpOnly session cookie set by the API). The demo is a separate, limited role.
+export type Me = { email: string; name: string; workspace: string; role: "owner" | "demo" };
+/** The public "Try the live demo" entry is offered only when the deployment enables it. */
 export const DEMO_ENABLED = process.env.NEXT_PUBLIC_JUDGE_MODE === "true";
-export const isDemoSecret = (s: string) => !!s && !!JUDGE_SECRET && s === JUDGE_SECRET;
 
 // ---- plain English for the rules engine ----
 export const RULE_TEXT: Record<string, string> = {
@@ -65,9 +63,17 @@ export const ACTION_COLOR: Record<string, string> = {
 };
 /** What a decision looks like now: an escalation the owner approved or declined is no longer "needs approval". */
 export const decisionLabel = (x: { action: string; approved_tx?: string | null; mint_tx?: string | null; human_agreed?: number | null }) =>
-  x.approved_tx ? { text: x.mint_tx ? "Owner approved · paid on Base" : "Owner approved", tone: "emerald" as const }
+  x.approved_tx ? { text: x.mint_tx ? "Approved · paid on Base" : "Approved by owner", tone: "emerald" as const }
   : x.human_agreed === 0 && x.action !== "PAY" ? { text: x.action === "SCREEN_FAIL" ? "Blocked · dismissed" : "Declined by owner", tone: "red" as const }
   : { text: ACTION_TEXT[x.action] ?? x.action, tone: ({ PAY: "emerald", PARTIAL: "amber", HOLD: "zinc", ESCALATE: "orange", SCREEN_FAIL: "red" } as const)[x.action as "PAY"] ?? ("zinc" as const) };
+/** The amount a decision is about, the way a person reads it: paid, requested, blocked or declined. */
+export const amountLabel = (x: { action: string; amount: number; remainder: number; approved_tx?: string | null; human_agreed?: number | null }) =>
+  x.approved_tx ? { value: `+${usd(x.amount + x.remainder)}`, note: x.amount > 0 ? `${usd(x.remainder)} approved by owner` : "" }
+  : x.action === "SCREEN_FAIL" ? { value: usd(x.remainder), note: "blocked" }
+  : x.human_agreed === 0 ? { value: usd(x.amount + x.remainder), note: "declined" }
+  : x.remainder > 0 && x.amount > 0 ? { value: `+${usd(x.amount)}`, note: `${usd(x.remainder)} awaiting approval` }
+  : x.remainder > 0 ? { value: usd(x.remainder), note: "awaiting approval" }
+  : { value: x.amount > 0 ? `+${usd(x.amount)}` : usd(0), note: "" };
 export const remainderText = (x: { remainder: number; approved_tx?: string | null; human_agreed?: number | null }) =>
   x.remainder <= 0 ? "" : x.approved_tx ? `${usd(x.remainder)} approved` : x.human_agreed === 0 ? `${usd(x.remainder)} declined` : `${usd(x.remainder)} pending approval`;
 export const STATUS_TEXT: Record<string, string> = {

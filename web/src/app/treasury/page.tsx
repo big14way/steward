@@ -2,11 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Landmark, ArrowUpRight, PiggyBank } from "lucide-react";
 import { get, post, usd, tx, addr, short, when, ACTION_TEXT, type Treasury } from "@/lib/api";
-import { useOwnerSecret } from "../owner-chip";
+import { useSession } from "../session";
 import { Button, Card, EmptyState, PageHeader, Pill, Skeleton, Stat, inputCls, useToast } from "../ui";
 
 export default function Page() {
-  const secret = useOwnerSecret();
+  const { me } = useSession();
+  const secret = me?.role === "owner" ? "session" : "";
   const toast = useToast();
   const [t, setT] = useState<Treasury | null>(null);
   const [amt, setAmt] = useState("");
@@ -14,7 +15,7 @@ export default function Page() {
   const load = useCallback(() => get<Treasury>("/treasury").then(setT).catch(() => setT({ events: [] })), []);
   useEffect(() => { load(); const i = setInterval(load, 20000); return () => clearInterval(i); }, [load]);
   const topUp = async () => {
-    setBusy(true); const r = await post<{ txHash?: string; detail?: string }>("/treasury/fund", { owner_secret: secret, amount: Math.round(+amt * 1e6) }); setBusy(false);
+    setBusy(true); const r = await post<{ txHash?: string; detail?: string }>("/treasury/fund", { amount: Math.round(+amt * 1e6) }); setBusy(false);
     r.ok ? toast.push("ok", <>Moved {amt} USDC into the reserve. <a className="underline" href={tx(r.data.txHash)} target="_blank">tx</a></>) : toast.push("err", r.data.detail ?? "Failed"); setAmt(""); load();
   };
   return (

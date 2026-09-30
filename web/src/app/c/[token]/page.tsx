@@ -2,23 +2,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowUpRight, Send, FileText } from "lucide-react";
-import { get, post, usd, tx, when, ago, periodLabel, ruleText, STATUS_TEXT, BASE_SEPOLIA_EXPLORER, type Portal, type Milestone } from "@/lib/api";
-import { Avatar, Button, Card, Field, Pill, Skeleton, inputCls, useToast } from "../../ui";
+import { get, post, usd, when, ago, periodLabel, ruleText, STATUS_TEXT, type Portal, type Milestone } from "@/lib/api";
+import { Avatar, Button, Card, Field, Pill, Skeleton, TxLink, inputCls, useToast } from "../../ui";
 
 const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sky"> = { pending: "zinc", paid: "emerald", partial: "amber", held: "zinc", escalated: "orange", rejected: "red", error: "red", batched: "sky" };
 
 function Timeline({ m }: { m: Milestone }) {
   const d = m.decision;
-  const steps: { label: string; detail?: string; at?: number; link?: string; href?: string; tone: "done" | "wait" | "bad" }[] = [
+  const steps: { label: string; detail?: string; at?: number; link?: string; chain?: "arc" | "base-sepolia"; tone: "done" | "wait" | "bad" }[] = [
     { label: "Request submitted", detail: m.auth === "circle" ? "signed by your Circle wallet" : m.auth === "wallet" ? "signed by your wallet" : "via your private link", at: m.created_at, tone: "done" },
   ];
   if (!d) steps.push({ label: "Agent review", detail: "checks screening, evidence, caps and liquidity — usually within a few minutes", tone: "wait" });
   else {
     const rt = ruleText(d.rule); const reason = d.reason ?? "";
-    steps.push({ label: "Agent review", detail: reason.toLowerCase().startsWith(rt.toLowerCase().slice(0, 12)) ? reason : `${rt} — ${reason}`, at: d.created_at, link: d.record_tx ?? undefined, tone: d.action === "SCREEN_FAIL" ? "bad" : "done" });
+    steps.push({ label: "Agent review", detail: reason || rt, at: d.created_at, link: d.record_tx ?? undefined, tone: d.action === "SCREEN_FAIL" ? "bad" : "done" });
     if (d.pay_tx) steps.push({ label: `Paid ${usd(d.amount ?? 0)} USDC`, at: d.created_at, link: d.pay_tx, tone: "done" });
     if ((d.remainder ?? 0) > 0 && d.action !== "SCREEN_FAIL") {
-      if (d.approved_tx && d.mint_tx) { steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, detail: "burned on Arc via CCTP", link: d.approved_tx, tone: "done" }); steps.push({ label: `Received ${usd(d.remainder ?? 0)} USDC on Base Sepolia`, href: `${BASE_SEPOLIA_EXPLORER}/tx/${d.mint_tx}`, tone: "done" }); }
+      if (d.approved_tx && d.mint_tx) { steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, detail: "burned on Arc via CCTP", link: d.approved_tx, tone: "done" }); steps.push({ label: `Received ${usd(d.remainder ?? 0)} USDC on Base Sepolia`, link: d.mint_tx, chain: "base-sepolia", tone: "done" }); }
       else if (d.approved_tx) steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, link: d.approved_tx, tone: "done" });
       else if (d.human_agreed === 0) steps.push({ label: "Owner declined", tone: "bad" });
       else steps.push({ label: `Waiting for the owner to approve ${usd(d.remainder ?? 0)} USDC`, detail: "they get a notification; nothing to do on your side", tone: "wait" });
@@ -31,7 +31,7 @@ function Timeline({ m }: { m: Milestone }) {
       {steps.map((s, i) => (
         <li key={i} className="flex gap-2 text-xs relative">
           <span className={`absolute -left-[17px] top-1 h-2 w-2 rounded-full ${s.tone === "done" ? "bg-emerald-400" : s.tone === "bad" ? "bg-red-400" : "bg-zinc-500 animate-pulse"}`} />
-          <span className="text-zinc-300">{s.label}{s.detail && <span className="text-zinc-500"> — {s.detail}</span>}{s.at ? <span className="text-zinc-600"> · {ago(s.at)}</span> : null}{(s.link || s.href) && <> · <a className="underline text-zinc-400" href={s.href ?? tx(s.link)} target="_blank">on-chain ↗</a></>}</span>
+          <span className="text-zinc-300 min-w-0">{s.label}{s.detail && <span className="text-zinc-500"> — {s.detail}</span>}{s.at ? <span className="text-zinc-600"> · {ago(s.at)}</span> : null}{s.link && <span className="ml-1.5 align-middle inline-block"><TxLink hash={s.link} chain={s.chain ?? "arc"} /></span>}</span>
         </li>
       ))}
     </ol>

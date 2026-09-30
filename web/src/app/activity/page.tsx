@@ -1,6 +1,6 @@
-import { ArrowUpRight } from "lucide-react";
-import { get, usd, tx, when, ruleText, ACTION_TEXT, decisionLabel, remainderText, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
-import { Card, PageHeader, Pill } from "../ui";
+import { when, ruleText, ACTION_TEXT, decisionLabel, amountLabel, type Decision } from "@/lib/api";
+import { serverGet } from "@/lib/server";
+import { Card, PageHeader, Pill, TxLink } from "../ui";
 
 export const dynamic = "force-dynamic";
 const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sky"> = { PAY: "emerald", PARTIAL: "amber", HOLD: "zinc", ESCALATE: "orange", SCREEN_FAIL: "red" };
@@ -10,7 +10,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
   const q = new URLSearchParams({ limit: "500" });
   if (action) q.set("action", action);
   if (allowance) q.set("allowance_id", allowance);
-  const d = await get<Decision[]>(`/decisions?${q}`).catch(() => [] as Decision[]);
+  const d = await serverGet<Decision[]>(`/decisions?${q}`, `/activity${action ? `?action=${action}` : ""}`).catch((e) => { if (String(e?.digest ?? "").startsWith("NEXT_REDIRECT")) throw e; return [] as Decision[]; });
   const actions = ["", "PAY", "PARTIAL", "HOLD", "ESCALATE", "SCREEN_FAIL"];
   const href = (a: string) => `/activity${a ? `?action=${a}` : ""}${allowance ? `${a ? "&" : "?"}allowance=${allowance}` : ""}`;
   return (
@@ -22,29 +22,33 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         ))}
       </div>
       <Card className="divide-y divide-zinc-800">
-        <div className="hidden md:grid grid-cols-[150px_1fr_130px_1fr_140px_60px] gap-3 px-4 py-2 text-xs text-zinc-500">
-          <div>Decision</div><div>Rule</div><div className="text-right">Amount</div><div>Reason</div><div className="text-right">When</div><div />
+        <div className="hidden md:grid grid-cols-[180px_minmax(0,1fr)_150px_minmax(0,1.2fr)_110px_190px] gap-x-3 px-4 py-2 text-xs text-zinc-500">
+          <div>Decision</div><div>Rule</div><div className="text-right">Amount</div><div>Reason</div><div className="text-right">When</div><div className="text-right">On-chain</div>
         </div>
         {d.length === 0 && <div className="p-6 text-zinc-500 text-sm">Nothing here yet.</div>}
         {d.map((x) => (
           <details key={x.hash} className="group">
-            <summary className="cursor-pointer list-none grid md:grid-cols-[150px_1fr_130px_1fr_140px_60px] gap-x-3 gap-y-1 px-4 py-3 text-sm items-center hover:bg-zinc-900/60">
+            <summary className="cursor-pointer list-none grid md:grid-cols-[180px_minmax(0,1fr)_150px_minmax(0,1.2fr)_110px_190px] gap-x-3 gap-y-1 px-4 py-3 text-sm items-center hover:bg-zinc-900/60">
               <div><Pill tone={decisionLabel(x).tone}>{decisionLabel(x).text}</Pill></div>
               <div className="text-zinc-300">#{x.allowance_id} · {ruleText(x.rule)}</div>
-              <div className="md:text-right tabular-nums font-medium">{usd(x.amount)}{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {remainderText(x)}</span>}</div>
+              <div className="md:text-right tabular-nums font-medium leading-tight">{amountLabel(x).value}{amountLabel(x).note && <div className="text-[11px] text-zinc-500 font-normal">{amountLabel(x).note}</div>}</div>
               <div className="text-zinc-400 truncate" title={x.reason}>{x.reason}</div>
-              <div className="md:text-right text-zinc-500 whitespace-nowrap">{when(x.created_at)}</div>
-              <div className="md:text-right"><a className="text-zinc-400 hover:text-white inline-flex" href={tx(x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx)} target="_blank"><ArrowUpRight className="h-4 w-4" /></a></div>
+              <div className="md:text-right text-zinc-500 text-xs whitespace-nowrap">{when(x.created_at)}</div>
+              <div className="md:text-right"><TxLink hash={x.mint_tx ?? x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx} chain={x.mint_tx ? "base-sepolia" : "arc"} /></div>
             </summary>
             <div className="px-4 pb-4 text-xs space-y-1 font-mono break-all bg-zinc-950/60">
               <div className="text-zinc-300 font-sans text-sm mb-2">{x.reason}</div>
-              <div>hash {x.hash}</div>
+              <div className="font-sans text-[11px] uppercase tracking-wide text-zinc-500 mt-1 mb-1">Where it happened on-chain</div>
+              <ol className="font-sans space-y-1.5 mb-3">
+                {x.record_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Decision recorded · AuditLog.record()</span><TxLink hash={x.record_tx} /></li>}
+                {x.pay_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Paid by the agent · pay()</span><TxLink hash={x.pay_tx} /></li>}
+                {x.escalate_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Sent to the owner · escalate()</span><TxLink hash={x.escalate_tx} /></li>}
+                {x.approved_tx && !x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Owner approved · approveAndPay()</span><TxLink hash={x.approved_tx} /></li>}
+                {x.approved_tx && x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Burned by CCTP · depositForBurn()</span><TxLink hash={x.approved_tx} /></li>}
+                {x.mint_tx && <li className="flex flex-wrap items-center gap-2"><span className="w-56 text-zinc-400">Minted to the contractor · receiveMessage()</span><TxLink hash={x.mint_tx} chain="base-sepolia" /></li>}
+              </ol>
+              <div>decision hash {x.hash}</div>
               {x.escalation_hash && x.escalation_hash !== x.hash && <div>remainder hash {x.escalation_hash}</div>}
-              {x.record_tx && <div>record <a className="underline" href={tx(x.record_tx)} target="_blank">{x.record_tx}</a></div>}
-              {x.pay_tx && <div>pay <a className="underline" href={tx(x.pay_tx)} target="_blank">{x.pay_tx}</a></div>}
-              {x.escalate_tx && <div>escalate <a className="underline" href={tx(x.escalate_tx)} target="_blank">{x.escalate_tx}</a></div>}
-              {x.approved_tx && <div>{x.mint_tx ? "burn (Arc)" : "approved"} <a className="underline" href={tx(x.approved_tx)} target="_blank">{x.approved_tx}</a></div>}
-              {x.mint_tx && <div>mint (Base Sepolia) <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${x.mint_tx}`} target="_blank">{x.mint_tx}</a></div>}
               {x.human_agreed != null && <div>owner {x.human_agreed ? "approved" : "declined"}</div>}
               <div>reason by {x.source === "llm" ? "LLM" : "rules"}{x.timing && x.timing !== "now" ? ` · ${x.timing}` : ""}</div>
               {x.canonical && (

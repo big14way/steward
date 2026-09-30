@@ -3,14 +3,16 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Link2, Copy, Check, Plus, ArrowUpRight, History, Ban, ArrowRight, ArrowLeft } from "lucide-react";
 import { get, post, usd, addr, short, when, periodLabel, type Contractor } from "@/lib/api";
-import { useOwnerSecret } from "../owner-chip";
+import { useSession } from "../session";
 import { Avatar, Button, Card, EmptyState, Field, Modal, PageHeader, Pill, Progress, Skeleton, inputCls, useToast } from "../ui";
 
 const PERIODS: [string, number][] = [["per week", 604800], ["per day", 86400], ["per month", 2592000], ["never resets", 0]];
 const blank = { name: "", contact: "", address: "", per_tx: "3", cap_period: "8", period: "604800", fund: "6" };
 
 export default function Page() {
-  const secret = useOwnerSecret();
+  const { me } = useSession();
+  const secret = me ? "session" : "";
+  const isOwner = me?.role === "owner";
   const toast = useToast();
   const [list, setList] = useState<Contractor[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -23,7 +25,7 @@ export default function Page() {
 
   const load = useCallback(() => {
     if (!secret) { setList(null); return; }
-    get<Contractor[]>("/contractors", { "X-Owner-Secret": secret }).then(setList).catch((e) => { setList([]); if (String(e.message) === "401") toast.push("err", "That owner key was not accepted. Sign in again from the top right."); });
+    get<Contractor[]>("/contractors").then(setList).catch((e) => { setList([]); if (String(e.message) === "401") toast.push("err", "Your session ended. Sign in again."); });
   }, [secret, toast]);
   useEffect(() => { load(); const t = setInterval(load, 20000); return () => clearInterval(t); }, [load]);
 
@@ -32,7 +34,7 @@ export default function Page() {
   const add = async () => {
     setBusy("add");
     const r = await post<Contractor & { detail?: string }>("/contractors", {
-      owner_secret: secret, name: f.name, contact: f.contact, address: f.address,
+      name: f.name, contact: f.contact, address: f.address,
       per_tx: Math.round(+f.per_tx * 1e6), cap_period: Math.round(+f.cap_period * 1e6), period: +f.period, fund: Math.round(+f.fund * 1e6),
     });
     setBusy("");
@@ -41,11 +43,11 @@ export default function Page() {
     toast.push("ok", <>{r.data.name} is set up{r.data.circle_wallet_created ? " with a new Circle wallet" : ""}. Send them their link.</>);
   };
   const fund = async (c: Contractor, v: string) => {
-    setBusy(c.id); const r = await post<{ detail?: string; txHash?: string }>(`/contractors/${c.id}/fund`, { owner_secret: secret, amount: Math.round(+v * 1e6) }); setBusy(""); setInline(null);
+    setBusy(c.id); const r = await post<{ detail?: string; txHash?: string }>(`/contractors/${c.id}/fund`, { amount: Math.round(+v * 1e6) }); setBusy(""); setInline(null);
     r.ok ? toast.push("ok", <>Topped up {c.name} by {v} USDC. <a className="underline" href={`https://explorer.testnet.arc.io/tx/${r.data.txHash}`} target="_blank">tx</a></>) : toast.push("err", r.data.detail ?? "Top-up failed. Is the owner wallet funded?"); load();
   };
   const revoke = async (c: Contractor) => {
-    setBusy(c.id); const r = await post<{ detail?: string }>(`/contractors/${c.id}/revoke`, { owner_secret: secret }); setBusy(""); setInline(null);
+    setBusy(c.id); const r = await post<{ detail?: string }>(`/contractors/${c.id}/revoke`, {}); setBusy(""); setInline(null);
     r.ok ? toast.push("ok", `${c.name}'s budget ended. Unspent USDC returned to you.`) : toast.push("err", r.data.detail ?? "Revoke failed"); load();
   };
   const F = (k: keyof typeof f, label: string, hint?: string, placeholder?: string, type = "text") => (
@@ -53,18 +55,14 @@ export default function Page() {
   );
   const summary = `Up to ${(+f.per_tx || 0).toFixed(2)} USDC per payment · ${(+f.cap_period || 0).toFixed(2)} USDC ${PERIODS.find(([, v]) => v === +f.period)?.[0] ?? ""}${+f.fund ? ` · funded with ${(+f.fund).toFixed(2)} USDC now` : ""}`;
 
-  if (!secret) {
-    return (
-      <div>
-        <PageHeader title="Contractors" description="People your agent can pay, each with an on-chain budget it cannot exceed." />
-        <EmptyState icon={Users} title="Sign in as the owner to manage contractors" body="Use the Sign in button top right. Contractors don't sign in — they use the private link you send them." />
-      </div>
-    );
+  if (!me) {
+    return <div className="space-y-4"><Skeleton className="h-16" /><div className="grid md:grid-cols-2 gap-4"><Skeleton className="h-48" /><Skeleton className="h-48" /></div></div>;
   }
+
   return (
     <div>
       <PageHeader title="Contractors" description="Each contractor has an on-chain budget the agent cannot exceed, and a private link to request payment."
-        action={<Button onClick={() => { setOpen(true); setStep(0); setCreated(null); }}><Plus className="h-4 w-4" />Add contractor</Button>} />
+        action={<Button disabled={!isOwner} title={isOwner ? undefined : "The demo can't add contractors"} onClick={() => { setOpen(true); setStep(0); setCreated(null); }}><Plus className="h-4 w-4" />Add contractor</Button>} />
 
       {created && (
         <Card className="p-4 mb-5 border-emerald-500/40 bg-emerald-500/5">
@@ -123,7 +121,7 @@ export default function Page() {
       {list === null && <div className="grid md:grid-cols-2 gap-3">{[0, 1].map((i) => <Skeleton key={i} className="h-44" />)}</div>}
       {list && list.length === 0 && (
         <EmptyState icon={Users} title="No contractors yet" body="Add one to get a private link you can send them. Their budget goes on-chain the moment you confirm."
-          action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" />Add contractor</Button>} />
+          action={<Button disabled={!isOwner} onClick={() => setOpen(true)}><Plus className="h-4 w-4" />Add contractor</Button>} />
       )}
       <div className="grid md:grid-cols-2 gap-3">
         {list?.map((c) => (
@@ -149,9 +147,9 @@ export default function Page() {
             {c.status !== "revoked" && inline?.id !== c.id && (
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button size="sm" onClick={() => copy(c)}>{copied === c.id ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}{copied === c.id ? "Copied" : "Copy their link"}</Button>
-                <Button size="sm" variant="secondary" disabled={busy === c.id} onClick={() => setInline({ id: c.id, kind: "fund", value: "5" })}><ArrowUpRight className="h-3.5 w-3.5" />Top up</Button>
+                <Button size="sm" variant="secondary" disabled={busy === c.id || !isOwner} onClick={() => setInline({ id: c.id, kind: "fund", value: "5" })}><ArrowUpRight className="h-3.5 w-3.5" />Top up</Button>
                 <Link href={`/activity?allowance=${c.allowance_id}`} className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 text-xs px-2.5 py-1.5"><History className="h-3.5 w-3.5" />History</Link>
-                <Button size="sm" variant="danger" className="ml-auto" disabled={busy === c.id} onClick={() => setInline({ id: c.id, kind: "revoke", value: "" })}><Ban className="h-3.5 w-3.5" />End budget</Button>
+                <Button size="sm" variant="danger" className="ml-auto" disabled={busy === c.id || !isOwner} onClick={() => setInline({ id: c.id, kind: "revoke", value: "" })}><Ban className="h-3.5 w-3.5" />End budget</Button>
               </div>
             )}
             {inline?.id === c.id && inline.kind === "fund" && (

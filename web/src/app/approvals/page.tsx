@@ -2,15 +2,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inbox, ArrowUpRight, ShieldAlert, Check, X } from "lucide-react";
 import Link from "next/link";
-import { get, post, usd, tx, ago, ruleText, DEMO_ENABLED, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone } from "@/lib/api";
-import { useOwnerSecret } from "../owner-chip";
-import { Avatar, Button, Card, EmptyState, PageHeader, Pill, Skeleton, useToast } from "../ui";
+import { get, post, usd, tx, ago, short, ruleText, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone } from "@/lib/api";
+import { useSession } from "../session";
+import { Avatar, Button, EmptyState, PageHeader, Pill, Skeleton, TxLink, useToast, Card } from "../ui";
 
 type Item = Decision & { milestone?: Milestone };
 
 export default function Page() {
-  const owner = useOwnerSecret();
-  const secret = owner;
+  const { me } = useSession();
+  const secret = me ? "session" : "";
   const toast = useToast();
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState("");
@@ -20,15 +20,15 @@ export default function Page() {
     const es = await get<Decision[]>("/escalations").catch(() => [] as Decision[]);
     const withMs = await Promise.all(es.map(async (e) => ({ ...e, milestone: await get<Milestone[]>(`/milestones?allowance_id=${e.allowance_id}&limit=50`).then((l) => l.find((m) => m.id === e.milestone_id)).catch(() => undefined) })));
     setItems(withMs);
-    if (owner) get<Contractor[]>("/contractors", { "X-Owner-Secret": owner }).then((l) => setNames(Object.fromEntries(l.map((c) => [c.allowance_id, c])))).catch(() => {});
-  }, [owner]);
+    if (me) get<Contractor[]>("/contractors").then((l) => setNames(Object.fromEntries(l.map((c) => [c.allowance_id, c])))).catch(() => {});
+  }, [me]);
   useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, [load]);
 
   const act = async (x: Item, kind: "approve" | "reject") => {
     setBusy(x.hash);
-    const r = await post<{ txHash?: string; mint_tx?: string; chain?: string; detail?: string }>(`/escalations/${x.hash}/${kind}`, { owner_secret: secret });
+    const r = await post<{ txHash?: string; mint_tx?: string; chain?: string; detail?: string }>(`/escalations/${x.hash}/${kind}`, {});
     setBusy("");
-    if (r.ok) toast.push("ok", kind !== "approve" ? "Declined." : r.data.mint_tx ? <>Paid {usd(x.remainder)} USDC on Base Sepolia via CCTP. <a className="underline" href={tx(r.data.txHash)} target="_blank">Burn on Arc</a> · <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${r.data.mint_tx}`} target="_blank">Mint on Base Sepolia</a></> : <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View transaction</a></>);
+    if (r.ok) toast.push("ok", kind !== "approve" ? "Declined." : r.data.mint_tx ? <>Paid {usd(x.remainder)} USDC on Base Sepolia via CCTP. <a className="underline" href={tx(r.data.txHash)} target="_blank">Burn on Arc Testnet</a> · <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${r.data.mint_tx}`} target="_blank">Mint on Base Sepolia</a></> : <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on Arc Testnet</a></>);
     else toast.push("err", r.data.detail ?? `Failed (${r.status})`);
     load();
   };
@@ -36,7 +36,6 @@ export default function Page() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Approvals" description="Requests the agent would not pay on its own. Approving pays from your Circle wallet in one transaction — it bypasses the agent's caps but never the funding, the kill switch, or the one-hash-pays-once rule." />
-      {!secret && <Card className="p-3 mb-4 text-sm text-amber-200 border-amber-500/30 bg-amber-500/5 flex flex-wrap items-center gap-3"><span>Sign in as the owner (top right) to approve or decline.</span>{DEMO_ENABLED && <Link href="/demo" className="rounded-md bg-amber-400 text-zinc-900 font-medium px-3 py-1 text-xs">Start the demo instead</Link>}</Card>}
       {items === null && <div className="space-y-3">{[0, 1].map((i) => <Skeleton key={i} className="h-40" />)}</div>}
       {items && items.length === 0 && <EmptyState icon={Inbox} title="Nothing waiting for you" body="The agent pays in-policy requests by itself. Over-policy requests and screening failures show up here." />}
       <div className="space-y-3">
@@ -71,7 +70,7 @@ export default function Page() {
                       <Button size="sm" variant="secondary" disabled={!secret || busy === x.hash} onClick={() => act(x, "reject")}>Dismiss</Button>
                     </div>
                   )}
-                  <div className="mt-3 text-[11px] text-zinc-600 font-mono break-all">decision {x.hash}{x.escalate_tx && <> · <a className="underline" href={tx(x.escalate_tx)} target="_blank">escalated on-chain</a></>}</div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500"><span>Recorded on-chain</span><TxLink hash={x.record_tx} /><span>Escalated</span><TxLink hash={x.escalate_tx} /><span className="font-mono text-zinc-600 break-all">decision {short(x.hash, 8)}</span></div>
                 </div>
               </div>
             </Card>

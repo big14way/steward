@@ -13,11 +13,12 @@ load_dotenv(Path(__file__).with_name(".env"))
 
 from eth_account import Account  # noqa: E402
 from eth_account.messages import encode_typed_data  # noqa: E402
-from fastapi import Depends, FastAPI, Header, HTTPException, Request  # noqa: E402
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 from web3 import Web3  # noqa: E402
 
+import auth  # noqa: E402
 import circle_webhook_verify  # noqa: E402
 import db  # noqa: E402
 import signer  # noqa: E402
@@ -25,6 +26,7 @@ import signer  # noqa: E402
 app = FastAPI(title="STEWARD API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 db.init()
+auth.init()
 
 w3 = signer.w3
 CHAIN_ID = signer.CHAIN_ID
@@ -39,17 +41,9 @@ def agent_auth(x_agent_key: str = Header(default="")):
         raise HTTPException(401)
 
 
-def owner_auth(secret: str):
-    if not os.environ.get("API_SECRET") or secret != os.environ["API_SECRET"]:
-        raise HTTPException(401)
-
-
-def approver_auth(secret: str):
-    """Owner secret, or the scoped judge secret (approve / reject only — cannot create, fund, or revoke)."""
-    js = os.environ.get("JUDGE_SECRET")
-    if js and secret == js:
-        return
-    owner_auth(secret)
+def viewer(request: Request):
+    """Owner pages and owner reads: a signed-in owner or demo session, or a machine caller with the API secret."""
+    return auth.need(request, roles=("owner", "demo"))
 
 
 # ---- EIP-712 milestone typed data (contractor signs in browser or CLI; server verifies) ----
@@ -68,7 +62,7 @@ def _allowance(id: int) -> dict:
     return dict(zip(KEYS, AM.functions.allowances(id).call()))
 
 
-@app.get("/account")
+@app.get("/account", dependencies=[Depends(viewer)])
 def account():
     """Owner account card: USDC balances of the owner wallet, the agent wallet (gas), and what is locked in budgets + reserve."""
     usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
@@ -85,6 +79,35 @@ def account():
     return {"owner": owner, "owner_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(owner)).call(),
             "agent": agent, "agent_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(agent)).call() if agent else None,
             "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": PAYER_NAME, "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/auth/login")
+def auth_login(body: LoginIn, request: Request, response: Response):
+    return auth.login(response, request, body.email, body.password)
+
+
+@app.post("/auth/demo")
+def auth_demo(request: Request, response: Response):
+    return auth.demo(response, request)
+
+
+@app.post("/auth/logout")
+def auth_logout(request: Request, response: Response):
+    auth.logout(response, request)
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+def auth_me(request: Request):
+    p = auth.principal(request)
+    if not p:
+        raise HTTPException(401, "Sign in to continue.")
+    return p
 
 
 @app.get("/health")
@@ -130,7 +153,7 @@ def submit_milestone(m: MilestoneIn):
     return {"id": mid, "status": "pending", "payee": payee, "evidence_hash": ev, "payout_chain": m.payout_chain}
 
 
-@app.get("/milestones")
+@app.get("/milestones", dependencies=[Depends(viewer)])
 def list_milestones(allowance_id: int | None = None, payee: str | None = None, status: str | None = None, limit: int = 200):
     q, args = "SELECT * FROM milestones WHERE 1=1", []
     if allowance_id is not None:
@@ -207,7 +230,7 @@ def save_decision(d: DecisionIn):
     return {"ok": True}
 
 
-@app.get("/decisions")
+@app.get("/decisions", dependencies=[Depends(viewer)])
 def list_decisions(allowance_id: int | None = None, action: str | None = None, limit: int = 100):
     q, args = "SELECT * FROM decisions WHERE 1=1", []
     if allowance_id is not None:
@@ -219,7 +242,7 @@ def list_decisions(allowance_id: int | None = None, action: str | None = None, l
         return [dict(r) for r in c.execute(q, args)]
 
 
-@app.get("/decisions/{hash}")
+@app.get("/decisions/{hash}", dependencies=[Depends(viewer)])
 def get_decision(hash: str):
     with db.conn() as c:
         d = c.execute("SELECT * FROM decisions WHERE hash=?", (hash,)).fetchone()
@@ -231,19 +254,19 @@ def get_decision(hash: str):
     return out
 
 
-@app.get("/escalations")
+@app.get("/escalations", dependencies=[Depends(viewer)])
 def escalations():
     with db.conn() as c:
         return [dict(r) for r in c.execute("SELECT * FROM decisions WHERE action IN ('ESCALATE','PARTIAL','SCREEN_FAIL') AND approved_tx IS NULL AND human_agreed IS NULL ORDER BY created_at DESC")]
 
 
 class ApproveIn(BaseModel):
-    owner_secret: str   # shared secret for the judge/owner UI; ADAPT to session auth if time
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
 
 
 @app.post("/escalations/{hash}/approve")
-def approve(hash: str, body: ApproveIn):
-    approver_auth(body.owner_secret)
+def approve(hash: str, body: ApproveIn, request: Request):
+    auth.need(request, body.owner_secret, ("owner", "demo"))
     with db.conn() as c:
         d = c.execute("SELECT * FROM decisions WHERE hash=?", (hash,)).fetchone()
     if not d:
@@ -280,8 +303,8 @@ def approve(hash: str, body: ApproveIn):
 
 
 @app.post("/escalations/{hash}/reject")
-def reject(hash: str, body: ApproveIn):
-    approver_auth(body.owner_secret)
+def reject(hash: str, body: ApproveIn, request: Request):
+    auth.need(request, body.owner_secret, ("owner", "demo"))
     with db.conn() as c:
         c.execute("UPDATE decisions SET human_agreed=0 WHERE hash=?", (hash,))
         c.execute("UPDATE milestones SET status='rejected' WHERE id=(SELECT milestone_id FROM decisions WHERE hash=?)", (hash,))
@@ -289,7 +312,7 @@ def reject(hash: str, body: ApproveIn):
 
 
 class AllowanceIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
     payee: str
     cap_period: int
     per_tx: int
@@ -300,8 +323,8 @@ class AllowanceIn(BaseModel):
 
 
 @app.post("/allowances")
-def create_allowance(a: AllowanceIn):
-    owner_auth(a.owner_secret)
+def create_allowance(a: AllowanceIn, request: Request):
+    auth.need(request, a.owner_secret)
     agent_addr = os.environ["AGENT_ADDRESS"]
     r = signer.owner_create(agent_addr, a.payee, a.cap_period, a.per_tx, a.period, a.expiry)
     aid = AM.functions.nextId().call() - 1
@@ -314,33 +337,33 @@ def create_allowance(a: AllowanceIn):
 
 
 class FundIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
     amount: int   # 6 dp
 
 
 @app.post("/allowances/{id}/fund")
-def fund_allowance(id: int, body: FundIn):
-    owner_auth(body.owner_secret)
+def fund_allowance(id: int, body: FundIn, request: Request):
+    auth.need(request, body.owner_secret)
     return signer.owner_fund(id, body.amount)
 
 
 class RevokeIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
 
 
 @app.post("/allowances/{id}/revoke")
-def revoke_allowance(id: int, body: RevokeIn):
-    owner_auth(body.owner_secret)
+def revoke_allowance(id: int, body: RevokeIn, request: Request):
+    auth.need(request, body.owner_secret)
     return signer.owner_revoke(id)
 
 
-@app.get("/allowances")
+@app.get("/allowances", dependencies=[Depends(viewer)])
 def list_allowances():
     n = AM.functions.nextId().call()
     return [{"id": i, **_allowance(i)} for i in range(n)]
 
 
-@app.get("/allowances/{id}")
+@app.get("/allowances/{id}", dependencies=[Depends(viewer)])
 def get_allowance(id: int):
     return {"id": id, **_allowance(id)}
 
@@ -378,7 +401,7 @@ def save_treasury(t: TreasuryIn):
     return {"ok": True}
 
 
-@app.get("/treasury")
+@app.get("/treasury", dependencies=[Depends(viewer)])
 def list_treasury(limit: int = 100):
     with db.conn() as c:
         rows = [dict(r) for r in c.execute("SELECT * FROM treasury ORDER BY created_at DESC LIMIT ?", (limit,))]
@@ -397,14 +420,14 @@ def list_treasury(limit: int = 100):
 
 
 class TreasuryFundIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
     amount: int
 
 
 @app.post("/treasury/fund")
-def fund_treasury(body: TreasuryFundIn):
+def fund_treasury(body: TreasuryFundIn, request: Request):
     """Owner tops up the YieldSweeper reserve with USDC (plain ERC-20 transfer)."""
-    owner_auth(body.owner_secret)
+    auth.need(request, body.owner_secret)
     return signer.owner_transfer_usdc(os.environ["YIELD_SWEEPER"], body.amount)
 
 
@@ -426,8 +449,8 @@ PUBLIC_WEB = os.getenv("PUBLIC_WEB", "http://localhost:3000").rstrip("/")
 PAYER_NAME = os.getenv("PAYER_NAME", "Acme Studio")
 
 
-def _owner_header_auth(x_owner_secret: str = Header(default="")):
-    owner_auth(x_owner_secret)
+def _owner_header_auth(request: Request):
+    auth.need(request)
 
 
 def _sign_with_circle(wallet_id: str, allowance_id: int, title: str, amount: int, ev: str, nonce: str, payout_chain: str) -> str:
@@ -470,7 +493,7 @@ def _contractor_view(row: dict) -> dict:
 
 
 class ContractorIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
     name: str
     contact: str = ""
     address: str = ""            # blank → create a Circle wallet for them
@@ -483,8 +506,8 @@ class ContractorIn(BaseModel):
 
 
 @app.post("/contractors")
-def add_contractor(body: ContractorIn):
-    owner_auth(body.owner_secret)
+def add_contractor(body: ContractorIn, request: Request):
+    auth.need(request, body.owner_secret)
     import secrets as _secrets
     address, wallet_id = body.address.strip(), None
     out: dict = {}
@@ -514,7 +537,7 @@ def add_contractor(body: ContractorIn):
     return {**out, **_contractor_view(row)}
 
 
-@app.get("/contractors", dependencies=[Depends(_owner_header_auth)])
+@app.get("/contractors", dependencies=[Depends(viewer)])
 def list_contractors():
     with db.conn() as c:
         rows = [dict(r) for r in c.execute("SELECT * FROM contractors ORDER BY created_at DESC")]
@@ -522,13 +545,13 @@ def list_contractors():
 
 
 class OwnerActionIn(BaseModel):
-    owner_secret: str
+    owner_secret: str = ""   # machine callers only; the dashboard uses the session cookie
     amount: int = 0
 
 
 @app.post("/contractors/{id}/fund")
-def fund_contractor(id: str, body: OwnerActionIn):
-    owner_auth(body.owner_secret)
+def fund_contractor(id: str, body: OwnerActionIn, request: Request):
+    auth.need(request, body.owner_secret)
     with db.conn() as c:
         row = c.execute("SELECT * FROM contractors WHERE id=?", (id,)).fetchone()
     if not row:
@@ -537,9 +560,9 @@ def fund_contractor(id: str, body: OwnerActionIn):
 
 
 @app.post("/contractors/{id}/revoke")
-def revoke_contractor(id: str, body: OwnerActionIn):
+def revoke_contractor(id: str, body: OwnerActionIn, request: Request):
     """Ends the allowance: unspent USDC returns to the owner and the agent is locked out. The link stops accepting requests."""
-    owner_auth(body.owner_secret)
+    auth.need(request, body.owner_secret)
     with db.conn() as c:
         row = c.execute("SELECT * FROM contractors WHERE id=?", (id,)).fetchone()
     if not row:

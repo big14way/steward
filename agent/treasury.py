@@ -27,8 +27,8 @@ _H = {"X-Agent-Key": API_SECRET}
 
 def obligations() -> int:
     with httpx.Client(timeout=20) as c:
-        pend = c.get(f"{API_BASE}/milestones", params={"status": "pending", "limit": 1000}).json()
-        esc = c.get(f"{API_BASE}/escalations").json()
+        pend = c.get(f"{API_BASE}/milestones", params={"status": "pending", "limit": 1000}, headers=_H).json()
+        esc = c.get(f"{API_BASE}/escalations", headers=_H).json()
     return sum(m["amount"] for m in pend) + sum(e["remainder"] for e in esc if e["action"] != "SCREEN_FAIL")
 
 

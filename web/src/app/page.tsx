@@ -39,14 +39,14 @@ export default async function Landing() {
           STEWARD gives every contractor a budget enforced by a smart contract, writes down why every payment happened, and asks you only when a request is over policy. USDC on Arc, signed by Circle wallets, nothing to install.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400">Open the dashboard<ArrowRight className="h-4 w-4" /></Link>
+          <Link href="/signin" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400">Sign in<ArrowRight className="h-4 w-4" /></Link>
           {DEMO_ENABLED ? (
             <Link href="/demo" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800">Try the live demo</Link>
           ) : (
             <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><ExternalLink className="h-4 w-4" />Source & contracts</a>
           )}
         </div>
-        {DEMO_ENABLED && <p className="mt-3 text-xs text-zinc-500">The demo makes you the owner of a real studio on Arc Testnet: approve or decline actual requests.</p>}
+        {DEMO_ENABLED && <p className="mt-3 text-xs text-zinc-500">The demo opens a real studio’s workspace on Arc Testnet. You can approve or decline actual requests.</p>}
       </section>
 
       {/* product shot */}
@@ -145,7 +145,7 @@ const r = await s.decide({
           ))}
         </div>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400"><Wallet className="h-4 w-4" />Open the dashboard</Link>
+          <Link href="/signin" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 text-zinc-950 px-5 py-3 font-medium hover:bg-emerald-400"><Wallet className="h-4 w-4" />Sign in</Link>
           <Link href="/contractor" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><Link2 className="h-4 w-4" />I’m a contractor with my own wallet</Link>
         </div>
       </section>

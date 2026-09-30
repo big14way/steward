@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight, Users, Inbox, ScrollText, Wallet, Coins, CheckCheck, Timer, PiggyBank, Gauge } from "lucide-react";
-import { get, usd, tx, ago, short, ruleText, decisionLabel, remainderText, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
-import { Card, Pill, Stat } from "../ui";
+import { usd, ago, short, ruleText, decisionLabel, amountLabel, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
+import { serverGet } from "@/lib/server";
+import { Card, Pill, Stat, TxLink } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,10 @@ const TONE: Record<string, "emerald" | "amber" | "zinc" | "orange" | "red" | "sk
 
 export default async function Dashboard() {
   const [s, d, a, t] = await Promise.all([
-    safe(get<Stats>("/stats"), null as unknown as Stats),
-    safe(get<Decision[]>("/decisions?limit=8"), [] as Decision[]),
-    safe(get<Account>("/account"), null as unknown as Account),
-    safe(get<Treasury>("/treasury"), null as unknown as Treasury),
+    safe(serverGet<Stats>("/stats", "/dashboard"), null as unknown as Stats),
+    serverGet<Decision[]>("/decisions?limit=8", "/dashboard").catch(() => [] as Decision[]),
+    safe(serverGet<Account>("/account", "/dashboard"), null as unknown as Account),
+    safe(serverGet<Treasury>("/treasury", "/dashboard"), null as unknown as Treasury),
   ]);
   if (!s) {
     return <div className="text-zinc-400">The API is not reachable. Start <code>api/</code> first.</div>;
@@ -72,10 +73,10 @@ export default async function Dashboard() {
           {d.map((x) => (
             <div key={x.hash} className="px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <Pill tone={decisionLabel(x).tone}>{decisionLabel(x).text}</Pill>
-              <span className="font-medium tabular-nums">{x.amount > 0 ? `+${usd(x.amount)}` : usd(0)} USDC{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {remainderText(x)}</span>}</span>
+              <span className="font-medium tabular-nums">{amountLabel(x).value} USDC{amountLabel(x).note && <span className="text-zinc-500 font-normal"> · {amountLabel(x).note}</span>}</span>
               <span className="text-zinc-400">{ruleText(x.rule)}</span>
               <span className="text-zinc-500 ml-auto whitespace-nowrap">{ago(x.created_at)}</span>
-              <a className="text-zinc-400 hover:text-white inline-flex items-center gap-0.5" href={tx(x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx)} target="_blank">on-chain<ArrowUpRight className="h-3.5 w-3.5" /></a>
+              <TxLink hash={x.mint_tx ?? x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx} chain={x.mint_tx ? "base-sepolia" : "arc"} />
             </div>
           ))}
         </Card>

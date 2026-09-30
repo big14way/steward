@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { CheckCircle2, AlertTriangle, X, type LucideIcon } from "lucide-react";
+import { CheckCircle2, AlertTriangle, X, ArrowUpRight, type LucideIcon } from "lucide-react";
+import { txOn, short } from "@/lib/api";
 
 // ---------- primitives ----------
 export function Button({ variant = "primary", size = "md", className = "", ...p }:
@@ -137,5 +138,21 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
         <div className="p-5">{children}</div>
       </div>
     </div>
+  );
+}
+
+/** A transaction, labelled with the chain it happened on and a short hash; opens that chain's explorer. */
+export function TxLink({ hash, chain = "arc", label }: { hash?: string | null; chain?: "arc" | "base-sepolia"; label?: string }) {
+  if (!hash) return null;
+  const arc = chain === "arc";
+  return (
+    <a href={txOn(hash, chain)} target="_blank" rel="noreferrer" title={`${arc ? "Arc Testnet" : "Base Sepolia"} transaction ${hash}`}
+      className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700/80 bg-zinc-900 px-1.5 py-0.5 text-[11px] leading-4 text-zinc-300 hover:text-white hover:border-zinc-500 whitespace-nowrap">
+      <span className={`h-1.5 w-1.5 rounded-full ${arc ? "bg-emerald-400" : "bg-sky-400"}`} />
+      {label ? <span>{label}</span> : null}
+      <span className="text-zinc-400">{arc ? "Arc Testnet" : "Base Sepolia"}</span>
+      <span className="font-mono">{short(hash, 4)}</span>
+      <ArrowUpRight className="h-3 w-3" />
+    </a>
   );
 }
