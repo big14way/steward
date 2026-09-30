@@ -4,6 +4,7 @@ import { usd, ago, short, ruleText, decisionLabel, amountLabel, EXPLORER, type S
 import { serverGet } from "@/lib/server";
 import { Card, Pill, Stat, TxLink } from "../ui";
 import CopyButton from "../copy-button";
+import UsageCard from "./usage-card";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +110,8 @@ export default async function Dashboard() {
           ))}
         </Card>
       </section>
+
+      <UsageCard />
     </div>
   );
 }

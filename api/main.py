@@ -22,11 +22,13 @@ import auth  # noqa: E402
 import circle_webhook_verify  # noqa: E402
 import db  # noqa: E402
 import signer  # noqa: E402
+import usage  # noqa: E402
 
 app = FastAPI(title="STEWARD API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 db.init()
 auth.init()
+usage.init()
 
 w3 = signer.w3
 CHAIN_ID = signer.CHAIN_ID
@@ -205,13 +207,17 @@ def auth_signup(body: SignupIn, request: Request, response: Response):
     """A new business gets a workspace, its own Circle owner wallet on Arc, and a session."""
     if not os.environ.get("CIRCLE_WALLET_SET_ID"):
         raise HTTPException(503, "Sign-up needs Circle wallets configured on this deployment.")
-    return auth.signup(response, request, body.name, body.business, body.email, body.password,
+    user = auth.signup(response, request, body.name, body.business, body.email, body.password,
                        lambda label: _create_circle_wallet(label, kind="owner"))
+    usage.track(request, response, "signup")
+    return user
 
 
 @app.post("/auth/demo")
 def auth_demo(request: Request, response: Response):
-    return auth.demo(response, request)
+    user = auth.demo(response, request)
+    usage.track(request, response, "demo")
+    return user
 
 
 @app.post("/auth/logout")
@@ -513,6 +519,31 @@ def workspace_stats(p: dict = Depends(viewer)):
     if ids is not None:
         s["contractors"] = len({_allowance(i)["payee"].lower() for i in ids})
     return s
+
+
+def _operator(request: Request) -> dict:
+    """The person running this deployment: the launch workspace's owner (or the API secret). Other businesses and the demo are refused."""
+    p = auth.principal(request)
+    if not p:
+        raise HTTPException(401, "Sign in to continue.")
+    if p["role"] != "owner" or p.get("workspace_id") not in (1, None):
+        raise HTTPException(403, "Only the operator of this deployment can see usage.")
+    return p
+
+
+@app.get("/stats/usage")
+def usage_stats(request: Request):
+    """Private: how many people tried STEWARD (anonymous browser counts), for the operator only. Not part of the public /stats."""
+    _operator(request)
+    return usage.report(request)
+
+
+@app.post("/stats/usage/ignore-me")
+def usage_ignore_me(request: Request, response: Response):
+    """Private: stop counting the operator's own browser, and drop what it already counted."""
+    _operator(request)
+    usage.ignore_browser(request, response)
+    return {"ok": True}
 
 
 @app.get("/stats")
@@ -835,8 +866,11 @@ def _by_token(token: str) -> dict:
 
 
 @app.get("/c/{token}")
-def contractor_portal(token: str):
+def contractor_portal(token: str, request: Request, response: Response):
     row = _by_token(token)
+    viewer_user = auth.session_user(request)
+    if not viewer_user or viewer_user.get("role") == "demo":   # a signed-in owner checking a link is not a new person
+        usage.track(request, response, "contractor_view")
     v = _contractor_view(row)
     with db.conn() as c:
         ms = [dict(r) for r in c.execute("SELECT * FROM milestones WHERE allowance_id=? ORDER BY created_at DESC LIMIT 100", (row["allowance_id"],))]
@@ -972,7 +1006,7 @@ class RequestIn(BaseModel):
 
 
 @app.post("/c/{token}/requests")
-def contractor_request(token: str, body: RequestIn):
+def contractor_request(token: str, body: RequestIn, request: Request, response: Response):
     row = _by_token(token)
     if row["status"] != "active":
         raise HTTPException(400, "this contractor link has been revoked")
@@ -992,6 +1026,7 @@ def contractor_request(token: str, body: RequestIn):
     with db.conn() as c:
         c.execute("INSERT INTO milestones(id,allowance_id,payee,title,amount,evidence_url,evidence_hash,signature,status,created_at,payout_chain,auth) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                   (mid, row["allowance_id"], a["payee"], body.title.strip(), body.amount, body.evidence_url.strip(), ev, sig, "pending", int(time.time()), body.payout_chain, auth))
+    usage.track(request, response, "contractor_request")
     return {"id": mid, "status": "pending", "auth": auth, "evidence_hash": ev}
 
 
@@ -1015,6 +1050,7 @@ async def admin_db_import(request: Request):
         f.write(raw)
     os.replace(db.DB + ".tmp", db.DB)
     db.init()
+    usage.init()
     with db.conn() as c:
         n = c.execute("SELECT COUNT(*) FROM contractors").fetchone()[0]
         m = c.execute("SELECT COUNT(*) FROM decisions").fetchone()[0]
