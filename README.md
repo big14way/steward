@@ -264,3 +264,7 @@ local walkthrough, and `GET /health` reports which is active. Set `OWNER_EMAIL` 
 
 Circle wallet creation and webhook signature verification are adapted from [`circlefin/arc-escrow`](https://github.com/circlefin/arc-escrow)
 (Apache-2.0, disclosed). Everything else was written Sep 28 – Oct 10, 2026.
+
+## License
+
+[MIT](LICENSE). `api/circle_webhook_verify.py` is adapted from `circlefin/arc-escrow` and stays under Apache-2.0, as noted in the license file.
