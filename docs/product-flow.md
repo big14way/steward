@@ -83,3 +83,13 @@ same-origin `/api` proxy. A Next.js `proxy.ts` sends anyone without a session fr
 `/allowances`, `/treasury`, `/contractors` all return 401 without it). The demo is a `demo` role (view, approve, decline; 403 on create, fund,
 revoke). Machine callers keep their keys (`X-Agent-Key` for the agent). Contractors keep their private link: it only opens their own page.
 Public: the landing page, `/stats`, `/health`, the SDK docs and contractor links. The old demo secret is no longer shipped in the browser bundle.
+
+## Self-serve workspaces (Sep 30, 2026)
+
+`/signup` creates a workspace for a business: a Circle Developer-Controlled owner wallet on ARC-TESTNET is created for it, and every owner
+action (create, fund, end a budget, approve, CCTP payout, USYC) is signed by that wallet. Reads are scoped by workspace: a business sees only
+the allowances its own contractors use (the launch workspace, Acme Studio, also keeps the allowances created before workspaces existed), and
+anything else returns 404. The dashboard shows a three-step start (fund the wallet from Circle's faucet, add a contractor, send the link) until
+the first budget exists, and adding a contractor from an empty wallet explains how much USDC is needed instead of failing on gas. The agent
+serves every workspace: allowances name the STEWARD agent, and each budget's owner is that business's wallet, so the payer count on-chain grows
+with each business that funds a budget.

@@ -26,8 +26,12 @@ nothing to install for the people being paid.
    **0.30 USDC** with any link as evidence. The agent pays it within about a minute and the timeline shows each transaction.
    Request **0.60** instead and it goes to Approvals for you to approve in step 2's inbox.
 
-The owner account itself signs in with email and password at [/signin](https://steward-arc.vercel.app/signin); every owner page and owner API
-call is private without that session.
+5. Or start your own business: **[Create a workspace](https://steward-arc.vercel.app/signup)**. You get your own Circle wallet on Arc; add
+   10 test USDC from [Circle's faucet](https://faucet.circle.com) (Arc Testnet), add a contractor, and send them their link. Your workspace is
+   private: its contractors, requests and approvals are visible only to you.
+
+Owners sign in with email and password at [/signin](https://steward-arc.vercel.app/signin); every owner page and owner API call is private
+without that session.
 
 ## The problem
 
@@ -108,6 +112,7 @@ wording of a reason and nothing else. Every cycle is recorded, including `HOLD`.
 | ![Approvals](web/public/shots/approvals.jpg) | ![Activity](web/public/shots/activity.jpg) |
 | **Approvals**: only what policy blocked, in plain English, with one-click approve. | **Activity**: every decision with its on-chain trail and replayable record. |
 
+Every business gets its own workspace and its own Circle owner wallet on sign-up; reads, approvals, budgets and USYC are scoped to it.
 Sign-in follows how payout products already work: Deel and Stripe keep the business dashboard behind email and password, demos run as limited roles,
 and the people being paid get single-purpose private links instead of accounts. Details and research: [docs/product-flow.md](docs/product-flow.md).
 
@@ -218,7 +223,7 @@ Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) an
 | Done and proven | Still open |
 |---|---|
 | Contracts deployed; 46 contract tests, 20 agent tests, 4 SDK tests | Agent reserve contract onto USYC (its vault is fixed at deploy; the owner wallet already holds real USYC) |
-| Hosted app with owner sign-in, demo role, contractor links | Two-factor sign-in and self-serve sign-up for more businesses |
+| Hosted app with self-serve sign-up (a workspace and Circle wallet per business), owner sign-in, demo role, contractor links | Two-factor sign-in; more real businesses |
 | Agent paying real contractors on Arc through Circle wallets, reasons written by Claude Sonnet 5.5 | Telegram approvals (built; needs a bot token) |
 | CCTP payout to Base Sepolia, Gas Station relayer, signed webhooks | Integrators beyond our own agent |
 | Adversarial test on the live product and on a testnet fork | |
