@@ -125,7 +125,7 @@ export default async function Landing() {
             <a href="https://github.com/big14way/steward/tree/main/packages/steward-sdk" target="_blank" className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm">packages/steward-sdk<ArrowUpRight className="h-3.5 w-3.5" /></a>
           </div>
         </div>
-        <pre className="text-xs sm:text-sm bg-zinc-950 border border-zinc-800 rounded-lg p-4 overflow-auto text-zinc-300">{`import { Steward } from "@big14way/steward-sdk";
+        <pre className="text-xs sm:text-sm bg-zinc-950 border border-zinc-800 rounded-lg p-4 overflow-auto text-zinc-300">{`import { Steward } from "steward-arc-sdk";
 
 const s = new Steward({ allowanceManager, auditLog, account });
 const r = await s.decide({

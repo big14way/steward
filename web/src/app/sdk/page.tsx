@@ -1,4 +1,4 @@
-const TS = `import { Steward } from "@big14way/steward-sdk";
+const TS = `import { Steward } from "steward-arc-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 
 const s = new Steward({
@@ -30,7 +30,7 @@ export default function Page() {
         expiry the agent can't exceed, an on-chain decision log, and an escalation path. Ten lines. Publishing on npm and PyPI on Day 9.
       </p>
       <div className="space-y-2">
-        <div className="text-sm text-zinc-300">TypeScript · <code>npm i @big14way/steward-sdk viem</code></div>
+        <div className="text-sm text-zinc-300">TypeScript · <code>npm i steward-arc-sdk viem</code></div>
         <pre className="text-xs bg-zinc-900 border border-zinc-800 rounded p-4 overflow-auto">{TS}</pre>
       </div>
       <div className="space-y-2">

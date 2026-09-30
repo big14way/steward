@@ -188,7 +188,7 @@ Circle wallets: owner `0x7bc79b07faa88299667ce65283129b314cb15c2f` · agent `0x3
 ## SDK
 
 ```ts
-import { Steward } from "@big14way/steward-sdk";   // npm i @big14way/steward-sdk viem · pip install steward-sdk
+import { Steward } from "steward-arc-sdk";   // npm i steward-arc-sdk viem · pip install steward-sdk
 
 const s = new Steward({ allowanceManager, auditLog, account: agent });
 // rules, canonical hash, AuditLog.record(), then pay() or escalate()
