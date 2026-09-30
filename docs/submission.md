@@ -18,10 +18,12 @@ and asks a human only when a request is outside policy. USDC on Arc, signed by C
 
 ## Traction
 
-**Businesses onboarded.** 1 paying business so far (Acme Studio, our launch workspace) with 8 contractors, each with their own on-chain
-budget and a Circle wallet created for them, including one real freelancer paid to their own wallet. Self-serve sign-up is live, so more businesses can onboard: _(add each real business: name, contractors, payments)._
+**Businesses onboarded.** 2 paying businesses on-chain. **webservice co**, a real business trying STEWARD, signed up through self-serve on Sep 30,
+funded its own Circle wallet, added its contractor Lela (a Circle wallet was created for her) and paid her 10 USDC for a logo: the agent
+decided within policy, Claude wrote the reason, and the payment is on Arc (tx 0x0a7d3a48…a2687). **Acme Studio**, our launch workspace,
+pays 8 more contractors, including one real freelancer paid to their own wallet.
 
-**Value moved.** 11.15 USDC paid to contractors across 19 paid requests; 21 agent decisions recorded on-chain (11 paid by the agent within
+**Value moved.** 21.15 USDC paid to contractors across 20 paid requests; 22 agent decisions recorded on-chain (12 paid by the agent within
 policy, 8 sent to the owner, 2 blocked screening failures); 88.9% of reviewed escalations approved by the owner; 100% paid within 24 hours;
 first cross-chain payout (CCTP V2, Arc to Base Sepolia) delivered 23 seconds after approval; idle owner USDC moved into real USYC and back.
 
