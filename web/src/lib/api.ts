@@ -54,7 +54,7 @@ export const ruleText = (rule?: string | null) => {
 };
 export const ACTION_TEXT: Record<string, string> = {
   PAY: "Paid", PARTIAL: "Partly paid, rest needs approval", HOLD: "On hold", ESCALATE: "Needs owner approval",
-  SCREEN_FAIL: "Blocked: screening failed", SWEEP: "Swept to vault", REDEEM: "Redeemed from vault",
+  SCREEN_FAIL: "Blocked: screening failed", SWEEP: "Swept to vault", REDEEM: "Redeemed from vault", USYC_MINT: "Moved into USYC", USYC_REDEEM: "Redeemed from USYC",
 };
 export const ACTION_COLOR: Record<string, string> = {
   PAY: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30", PARTIAL: "text-amber-300 bg-amber-500/10 border-amber-500/30",
@@ -109,7 +109,9 @@ export type Milestone = {
   auth?: string | null; decision?: (Partial<Decision> & { created_at: number }) | null;
 };
 export type TreasuryEvent = { id: number; action: string; assets: number; shares: number; tx: string; hash?: string; record_tx?: string | null; created_at: number };
+export type Usyc = { teller: string; token: string; shares: number; value: number; price: number; allowlisted: boolean };
 export type Treasury = {
+  usyc?: Usyc;
   events: TreasuryEvent[]; sweeper?: string | null; vault?: string; balance?: number; floor?: number; shares?: number; position_assets?: number; error?: string;
 };
 export type Health = { ok: boolean; chain_id: number; block: number; allowance_manager: string; owner_signer: string; owner: string; explorer: string };

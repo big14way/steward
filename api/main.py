@@ -416,7 +416,61 @@ def list_treasury(limit: int = 100):
                         "shares": shares, "position_assets": vault.functions.convertToAssets(shares).call() if shares else 0, "vault": vault.address})
         except Exception as e:  # chain unreachable → still return the log
             out["error"] = str(e)[:200]
+    try:  # real USYC held by the owner's Circle wallet (allowlisted by Circle)
+        import usyc
+        out["usyc"] = usyc.position(w3, signer.owner_address())
+    except Exception as e:
+        out["usyc_error"] = str(e)[:200]
     return out
+
+
+class UsycIn(BaseModel):
+    amount: int = 0          # USDC (6 dp) to move into USYC
+    shares: int = 0          # USYC (6 dp) to redeem; 0 with all=True redeems everything
+    all: bool = False
+
+
+def _usyc_event(action: str, assets: int, shares: int, tx: str | None):
+    with db.conn() as c:
+        c.execute("INSERT INTO treasury(action,assets,shares,tx,created_at,hash,record_tx,bal_after,obligations,canonical) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (action, assets, shares, tx, int(time.time()), "", None, 0, 0, ""))
+
+
+@app.post("/treasury/usyc/deposit")
+def usyc_deposit(body: UsycIn, request: Request):
+    """Owner moves idle USDC from their Circle wallet into USYC through Circle's Teller."""
+    auth.need(request)
+    if signer.OWNER_SIGNER != "circle":
+        raise HTTPException(400, "USYC needs the owner's Circle wallet (OWNER_SIGNER=circle)")
+    if body.amount <= 0:
+        raise HTTPException(400, "Enter an amount of USDC to move into USYC.")
+    import usyc
+    before = usyc.position(w3, signer.owner_address())["shares"]
+    r = usyc.deposit(os.environ["OWNER_WALLET_ID"], signer.owner_address(), body.amount)
+    if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
+        raise HTTPException(502, f"USYC deposit did not complete: {r.get('errorReason') or r.get('state')}")
+    after = usyc.position(w3, signer.owner_address())
+    _usyc_event("USYC_MINT", body.amount, max(after["shares"] - before, 0), r.get("txHash"))
+    return {"txHash": r.get("txHash"), "usyc": after}
+
+
+@app.post("/treasury/usyc/redeem")
+def usyc_redeem(body: UsycIn, request: Request):
+    """Owner redeems USYC back to USDC in their Circle wallet (for example to top up a contractor's budget)."""
+    auth.need(request)
+    import usyc
+    pos = usyc.position(w3, signer.owner_address())
+    shares = pos["shares"] if body.all else body.shares
+    if shares <= 0 or shares > pos["shares"]:
+        raise HTTPException(400, f"You hold {pos['shares'] / 1e6:.6f} USYC.")
+    usdc = w3.eth.contract(address=Web3.to_checksum_address(signer.USDC), abi=signer.ERC20_MIN)
+    bal_before = usdc.functions.balanceOf(Web3.to_checksum_address(signer.owner_address())).call()
+    r = usyc.redeem(os.environ["OWNER_WALLET_ID"], signer.owner_address(), shares)
+    if str(r.get("state", "")).split(".")[-1] not in ("COMPLETE", "CONFIRMED"):
+        raise HTTPException(502, f"USYC redeem did not complete: {r.get('errorReason') or r.get('state')}")
+    got = usdc.functions.balanceOf(Web3.to_checksum_address(signer.owner_address())).call() - bal_before
+    _usyc_event("USYC_REDEEM", max(got, 0), shares, r.get("txHash"))
+    return {"txHash": r.get("txHash"), "usdc_received": got, "usyc": usyc.position(w3, signer.owner_address())}
 
 
 class TreasuryFundIn(BaseModel):
