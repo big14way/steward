@@ -23,7 +23,7 @@ export default function Page() {
 
   const load = useCallback(() => {
     if (!secret) { setList(null); return; }
-    get<Contractor[]>("/contractors", { "X-Owner-Secret": secret }).then(setList).catch((e) => { setList([]); if (String(e.message) === "401") toast.push("err", "That owner secret was not accepted."); });
+    get<Contractor[]>("/contractors", { "X-Owner-Secret": secret }).then(setList).catch((e) => { setList([]); if (String(e.message) === "401") toast.push("err", "That owner key was not accepted. Sign in again from the top right."); });
   }, [secret, toast]);
   useEffect(() => { load(); const t = setInterval(load, 20000); return () => clearInterval(t); }, [load]);
 

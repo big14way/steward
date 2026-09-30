@@ -28,15 +28,15 @@ export default function OwnerChip() {
           <div className="space-y-4">
             <p className="text-sm text-zinc-400">
               {demo
-                ? "You are exploring as the owner of Acme Studio. You can approve and decline requests; creating or funding budgets needs the real owner secret."
-                : "This browser can add contractors, top up budgets, move reserve funds, and approve requests. The secret stays on this device."}
+                ? "You are exploring as the owner of Acme Studio. You can approve and decline requests; creating or funding budgets needs the owner key."
+                : "This browser can add contractors, top up budgets, move reserve funds, and approve requests. The key stays on this device."}
             </p>
             <Button variant="secondary" onClick={clear}><LogOut className="h-4 w-4" />{demo ? "Exit demo" : "Sign out"}</Button>
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-zinc-400">Paste the owner secret (the API's <code>API_SECRET</code>). It is stored in this browser only and sent with owner actions.</p>
-            <input autoFocus className={inputCls} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && draft.trim() && save(draft)} placeholder="owner secret" type="password" />
+            <p className="text-sm text-zinc-400">Enter your owner key. It stays in this browser and is only sent when you add, fund or approve.</p>
+            <input autoFocus className={inputCls} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && draft.trim() && save(draft)} placeholder="Owner key" type="password" />
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => save(draft)} disabled={!draft.trim()}>Sign in</Button>
               {DEMO_ENABLED && JUDGE_SECRET && <Button variant="secondary" onClick={() => save(JUDGE_SECRET)}><FlaskConical className="h-4 w-4" />Explore the demo instead</Button>}

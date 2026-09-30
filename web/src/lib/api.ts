@@ -63,6 +63,13 @@ export const ACTION_COLOR: Record<string, string> = {
   HOLD: "text-zinc-300 bg-zinc-500/10 border-zinc-500/30", ESCALATE: "text-orange-300 bg-orange-500/10 border-orange-500/30",
   SCREEN_FAIL: "text-red-300 bg-red-500/10 border-red-500/30", SWEEP: "text-sky-300 bg-sky-500/10 border-sky-500/30", REDEEM: "text-sky-300 bg-sky-500/10 border-sky-500/30",
 };
+/** What a decision looks like now: an escalation the owner approved or declined is no longer "needs approval". */
+export const decisionLabel = (x: { action: string; approved_tx?: string | null; mint_tx?: string | null; human_agreed?: number | null }) =>
+  x.approved_tx ? { text: x.mint_tx ? "Owner approved · paid on Base" : "Owner approved", tone: "emerald" as const }
+  : x.human_agreed === 0 && x.action !== "PAY" ? { text: x.action === "SCREEN_FAIL" ? "Blocked · dismissed" : "Declined by owner", tone: "red" as const }
+  : { text: ACTION_TEXT[x.action] ?? x.action, tone: ({ PAY: "emerald", PARTIAL: "amber", HOLD: "zinc", ESCALATE: "orange", SCREEN_FAIL: "red" } as const)[x.action as "PAY"] ?? ("zinc" as const) };
+export const remainderText = (x: { remainder: number; approved_tx?: string | null; human_agreed?: number | null }) =>
+  x.remainder <= 0 ? "" : x.approved_tx ? `${usd(x.remainder)} approved` : x.human_agreed === 0 ? `${usd(x.remainder)} declined` : `${usd(x.remainder)} pending approval`;
 export const STATUS_TEXT: Record<string, string> = {
   pending: "Waiting for the agent", paid: "Paid", partial: "Partly paid", held: "On hold: add evidence", escalated: "Waiting for owner approval",
   rejected: "Declined by owner", error: "Error, retrying", batched: "Scheduled",

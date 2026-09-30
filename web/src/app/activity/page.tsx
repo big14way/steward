@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { get, usd, tx, when, ruleText, ACTION_TEXT, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
+import { get, usd, tx, when, ruleText, ACTION_TEXT, decisionLabel, remainderText, BASE_SEPOLIA_EXPLORER, type Decision } from "@/lib/api";
 import { Card, PageHeader, Pill } from "../ui";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +29,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
         {d.map((x) => (
           <details key={x.hash} className="group">
             <summary className="cursor-pointer list-none grid md:grid-cols-[150px_1fr_130px_1fr_140px_60px] gap-x-3 gap-y-1 px-4 py-3 text-sm items-center hover:bg-zinc-900/60">
-              <div><Pill tone={TONE[x.action] ?? "zinc"}>{ACTION_TEXT[x.action] ?? x.action}</Pill></div>
+              <div><Pill tone={decisionLabel(x).tone}>{decisionLabel(x).text}</Pill></div>
               <div className="text-zinc-300">#{x.allowance_id} · {ruleText(x.rule)}</div>
-              <div className="md:text-right tabular-nums font-medium">{usd(x.amount)}{x.remainder > 0 && <span className="text-zinc-500 font-normal"> +{usd(x.remainder)} esc.</span>}</div>
+              <div className="md:text-right tabular-nums font-medium">{usd(x.amount)}{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {remainderText(x)}</span>}</div>
               <div className="text-zinc-400 truncate" title={x.reason}>{x.reason}</div>
               <div className="md:text-right text-zinc-500 whitespace-nowrap">{when(x.created_at)}</div>
               <div className="md:text-right"><a className="text-zinc-400 hover:text-white inline-flex" href={tx(x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx)} target="_blank"><ArrowUpRight className="h-4 w-4" /></a></div>

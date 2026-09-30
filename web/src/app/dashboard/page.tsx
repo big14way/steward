@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, Users, Inbox, ScrollText, Wallet, Coins, CheckCheck, Timer, PiggyBank, Gauge } from "lucide-react";
-import { get, usd, tx, ago, short, ruleText, ACTION_TEXT, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
+import { get, usd, tx, ago, short, ruleText, decisionLabel, remainderText, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
 import { Card, Pill, Stat } from "../ui";
 
 export const dynamic = "force-dynamic";
@@ -71,8 +71,8 @@ export default async function Dashboard() {
           {d.length === 0 && <div className="p-6 text-zinc-500 text-sm">No decisions yet. Add a contractor and have them submit a request.</div>}
           {d.map((x) => (
             <div key={x.hash} className="px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <Pill tone={TONE[x.action] ?? "zinc"}>{ACTION_TEXT[x.action] ?? x.action}</Pill>
-              <span className="font-medium tabular-nums">{x.amount > 0 ? `+${usd(x.amount)}` : usd(0)} USDC{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {usd(x.remainder)} pending approval</span>}</span>
+              <Pill tone={decisionLabel(x).tone}>{decisionLabel(x).text}</Pill>
+              <span className="font-medium tabular-nums">{x.amount > 0 ? `+${usd(x.amount)}` : usd(0)} USDC{x.remainder > 0 && <span className="text-zinc-500 font-normal"> · {remainderText(x)}</span>}</span>
               <span className="text-zinc-400">{ruleText(x.rule)}</span>
               <span className="text-zinc-500 ml-auto whitespace-nowrap">{ago(x.created_at)}</span>
               <a className="text-zinc-400 hover:text-white inline-flex items-center gap-0.5" href={tx(x.pay_tx ?? x.approved_tx ?? x.escalate_tx ?? x.record_tx)} target="_blank">on-chain<ArrowUpRight className="h-3.5 w-3.5" /></a>
