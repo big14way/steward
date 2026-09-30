@@ -4,11 +4,18 @@
     s = Steward(allowance_manager="0x…", audit_log="0x…", agent_private_key=os.environ["AGENT_PK"])
     r = s.decide(allowance_id=0, amount=150_000_000, memo="logo v2", inputs={...}, evidence=True, screen_ok=True)
 
+Agent signs with a Circle developer-controlled wallet instead? Pass the Circle client you already have:
+
+    client = utils.init_developer_controlled_wallets_client(api_key=..., entity_secret=...)   # circle-developer-controlled-wallets
+    s = Steward(allowance_manager="0x…", audit_log="0x…", circle_client=client, circle_wallet_id="…")
+
 Same rules, canonical hashing and remainder-hash convention as the reference agent in github.com/big14way/steward.
 """
 from __future__ import annotations
 
 import json
+import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
@@ -16,7 +23,7 @@ from eth_account import Account
 from eth_utils import keccak
 from web3 import Web3
 
-__all__ = ["Steward", "DecideResult", "apply_rules", "canonical", "decision_hash", "remainder_hash", "ACTION_CODE", "MIN_FEE_GWEI"]
+__all__ = ["Steward", "CircleSigner", "DecideResult", "apply_rules", "canonical", "decision_hash", "remainder_hash", "ACTION_CODE", "MIN_FEE_GWEI"]
 
 Action = Literal["HOLD", "PAY", "PARTIAL", "ESCALATE", "SCREEN_FAIL"]
 ACTION_CODE = {"HOLD": 0, "PAY": 1, "PARTIAL": 2, "ESCALATE": 3, "SWEEP": 4, "REDEEM": 5, "SCREEN_FAIL": 6}
@@ -34,6 +41,9 @@ AM_ABI = json.loads("""[
 LOG_ABI = json.loads("""[
  {"type":"function","name":"record","stateMutability":"nonpayable","inputs":[{"name":"allowanceId","type":"uint256"},{"name":"decisionHash","type":"bytes32"},{"name":"action","type":"uint8"},{"name":"amount","type":"uint128"}],"outputs":[]}
 ]""")
+# Solidity signatures for the writes, in Circle's abiFunctionSignature format.
+SIGNATURES = {"record": "record(uint256,bytes32,uint8,uint128)", "pay": "pay(uint256,uint128,bytes32,string)",
+              "escalate": "escalate(uint256,uint128,bytes32,string)"}
 KEYS = ["owner", "agent", "payee", "capPerPeriod", "perTxCap", "period", "periodStart", "expiry", "spentThisPeriod", "funded", "revoked"]
 
 
@@ -82,23 +92,58 @@ class DecideResult:
     record: dict = field(default_factory=dict)
 
 
+class CircleSigner:
+    """Sends STEWARD's writes through a Circle developer-controlled wallet. `client` is what
+    `circle.web3.utils.init_developer_controlled_wallets_client(api_key=..., entity_secret=...)` returns."""
+
+    def __init__(self, client: Any, wallet_id: str, fee_level: str = "MEDIUM", timeout: int = 120, poll: float = 2.0):
+        from circle.web3 import developer_controlled_wallets as dcw   # optional dependency: pip install "steward-sdk[circle]"
+        self._dcw, self._tx = dcw, dcw.TransactionsApi(client)
+        self.wallet_id, self.fee_level, self.timeout, self.poll = wallet_id, fee_level, timeout, poll
+
+    def send(self, contract: str, fn: str, args: list) -> str:
+        req = self._dcw.CreateContractExecutionTransactionForDeveloperRequest.from_dict({
+            "idempotencyKey": str(uuid.uuid4()), "walletId": self.wallet_id, "contractAddress": contract,
+            "abiFunctionSignature": SIGNATURES[fn], "abiParameters": [str(a) if isinstance(a, int) else a for a in args],
+            "feeLevel": self.fee_level})
+        tx_id = self._tx.create_developer_transaction_contract_execution(req).data.id
+        t0 = time.time()
+        while time.time() - t0 < self.timeout:
+            time.sleep(self.poll)
+            t = self._tx.get_transaction(id=tx_id).data.transaction
+            state = str(getattr(t.state, "value", t.state))
+            if state in ("COMPLETE", "CONFIRMED") and getattr(t, "tx_hash", None):
+                return t.tx_hash
+            if state in ("FAILED", "DENIED", "CANCELLED"):
+                raise RuntimeError(f"Circle tx {tx_id} {state}: {getattr(t, 'error_reason', None)}")
+        raise TimeoutError(f"Circle tx {tx_id} not confirmed in time")
+
+
 class Steward:
-    def __init__(self, allowance_manager: str, audit_log: str, agent_private_key: str,
-                 rpc: str = "https://rpc.testnet.arc.io", chain_id: int = ARC_TESTNET_CHAIN_ID):
+    def __init__(self, allowance_manager: str, audit_log: str, agent_private_key: Optional[str] = None,
+                 rpc: str = "https://rpc.testnet.arc.io", chain_id: int = ARC_TESTNET_CHAIN_ID, *,
+                 circle_client: Any = None, circle_wallet_id: Optional[str] = None, circle_fee_level: str = "MEDIUM"):
+        """Sign with a raw key (`agent_private_key`) or with a Circle wallet (`circle_client` + `circle_wallet_id`).
+        Either way, the allowance's `agent` must be that signer's address."""
         self.w3 = Web3(Web3.HTTPProvider(rpc))
         self.chain_id = chain_id
-        self.acct = Account.from_key(agent_private_key)
+        self.acct = Account.from_key(agent_private_key) if agent_private_key else None
+        self.circle = CircleSigner(circle_client, circle_wallet_id, circle_fee_level) if circle_client is not None and circle_wallet_id else None
+        if not self.acct and not self.circle:
+            raise ValueError("Steward needs agent_private_key, or circle_client and circle_wallet_id")
         self.am = self.w3.eth.contract(address=Web3.to_checksum_address(allowance_manager), abi=AM_ABI)
         self.log = self.w3.eth.contract(address=Web3.to_checksum_address(audit_log), abi=LOG_ABI)
 
     @property
-    def address(self) -> str:
-        return self.acct.address
+    def address(self) -> Optional[str]:
+        return self.acct.address if self.acct else None
 
     def allowance(self, allowance_id: int) -> dict:
         return dict(zip(KEYS, self.am.functions.allowances(allowance_id).call()))
 
     def _send(self, fn) -> str:
+        if self.circle:
+            return self.circle.send(fn.address, fn.fn_name, [("0x" + a.hex()) if isinstance(a, (bytes, bytearray)) else a for a in fn.args])
         base = self.w3.eth.get_block("latest").get("baseFeePerGas", 0)
         max_fee = max(int(base * 1.25), Web3.to_wei(MIN_FEE_GWEI, "gwei"))
         tx = fn.build_transaction({"from": self.acct.address, "chainId": self.chain_id,

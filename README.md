@@ -210,6 +210,8 @@ console.log(r.action, r.hash, r.payTx ?? r.escalateTx);
 
 Install: `npm i steward-arc-sdk viem` ([npm](https://www.npmjs.com/package/steward-arc-sdk)) · `pip install steward-sdk` ([PyPI](https://pypi.org/project/steward-sdk/)).
 Python has the same surface. See [packages/steward-sdk](packages/steward-sdk) and [docs/day9-sdk.md](docs/day9-sdk.md).
+Agent on a Circle wallet instead of a raw key? Pass `circle: { client, walletId }` (TypeScript) or `circle_client=` and `circle_wallet_id=` (Python)
+and STEWARD signs through Circle's contract-execution API. Since v0.2.0, [tested live on Arc Testnet](packages/steward-sdk#agent-on-a-circle-wallet-no-raw-key).
 
 ## Arc gotchas we hit
 

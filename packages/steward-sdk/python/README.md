@@ -50,6 +50,40 @@ r = s.decide(allowance_id=0, amount=150_000_000, memo="logo v2",
 print(r.action, r.hash, r.pay_tx or r.escalate_tx)
 ```
 
+## Agent on a Circle wallet (no raw key)
+
+Most Arc agents sign with a Circle Developer-Controlled wallet. Pass the Circle client you already have instead of `account`;
+STEWARD sends `record`, `pay` and `escalate` through Circle's contract-execution API and waits for the on-chain hash.
+The allowance's `agent` must be that wallet's address. Same rules, same hashes.
+
+```ts
+import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
+import { Steward } from "steward-arc-sdk";
+
+const client = initiateDeveloperControlledWalletsClient({ apiKey: process.env.CIRCLE_API_KEY!, entitySecret: process.env.CIRCLE_ENTITY_SECRET! });
+const s = new Steward({
+  allowanceManager: "0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6",   // Arc Testnet
+  auditLog: "0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866",
+  circle: { client, walletId: process.env.AGENT_WALLET_ID! },
+});
+const r = await s.decide({ allowanceId: 0n, amount: 150_000_000n, memo: "logo v2", inputs: { milestone: "logo v2" } });
+```
+
+```python
+# pip install "steward-sdk[circle]"
+from circle.web3 import utils
+from steward_sdk import Steward
+
+client = utils.init_developer_controlled_wallets_client(api_key=os.environ["CIRCLE_API_KEY"], entity_secret=os.environ["CIRCLE_ENTITY_SECRET"])
+s = Steward(allowance_manager="0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6", audit_log="0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866",
+            circle_client=client, circle_wallet_id=os.environ["AGENT_WALLET_ID"])
+r = s.decide(allowance_id=0, amount=150_000_000, memo="logo v2", inputs={"milestone": "logo v2"})
+```
+
+Tested live on Arc Testnet with both SDKs (a `HOLD` recorded through a Circle wallet:
+[TypeScript](https://explorer.testnet.arc.io/tx/0x1618d269880dae697842db31470db89e383e48b42450e829b0b8458f94e8a73f),
+[Python](https://explorer.testnet.arc.io/tx/0xbb36c711456a84a2de37992f10b81409807db2436abdaecddb4d257bf9c1fda8)).
+
 ## Owner side
 
 The owner (a Circle Developer-Controlled wallet in the reference app) calls `create(agent, payee, capPerPeriod, perTxCap, period, expiry)`,

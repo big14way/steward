@@ -84,14 +84,40 @@ export function applyRules(a: Allowance, p: DecideParams): { action: Action; rul
   return { action: "PAY", rule: "R5_pay", pay: p.amount, remainder: 0n };
 }
 
+/**
+ * The part of a Circle Developer-Controlled Wallets client STEWARD uses. Pass the client you already have:
+ * `initiateDeveloperControlledWalletsClient({ apiKey, entitySecret })` from `@circle-fin/developer-controlled-wallets`.
+ */
+export type CircleClientLike = {
+  createContractExecutionTransaction(req: {
+    walletId?: string; walletAddress?: string; blockchain?: string; contractAddress: string; abiFunctionSignature: string;
+    abiParameters: unknown[]; fee: { type: "level"; config: { feeLevel: "LOW" | "MEDIUM" | "HIGH" } }; idempotencyKey?: string;
+  }): Promise<{ data?: { id?: string } }>;
+  getTransaction(req: { id: string }): Promise<{ data?: { transaction?: { state?: string; txHash?: string; errorReason?: string } } }>;
+};
+
+/** Sign with a Circle developer-controlled wallet instead of a raw key. The allowance's `agent` must be this wallet's address. */
+export type CircleSigner = { client: CircleClientLike; walletId: string; feeLevel?: "LOW" | "MEDIUM" | "HIGH"; pollMs?: number; timeoutMs?: number };
+
+type StewardConfig = { rpc?: string; chain?: Chain; allowanceManager: Hex; auditLog: Hex; transport?: Transport } &
+  ({ account: Account; circle?: undefined } | { circle: CircleSigner; account?: undefined });
+
+/** Solidity signatures for the writes, in Circle's abiFunctionSignature format. */
+const SIGNATURES: Record<string, string> = {
+  record: "record(uint256,bytes32,uint8,uint128)",
+  pay: "pay(uint256,uint128,bytes32,string)",
+  escalate: "escalate(uint256,uint128,bytes32,string)",
+};
+
 export class Steward {
   private pub;
   private wallet;
-  constructor(private cfg: { rpc?: string; chain?: Chain; allowanceManager: Hex; auditLog: Hex; account: Account; transport?: Transport }) {
+  constructor(private cfg: StewardConfig) {
     const chain = cfg.chain ?? arcTestnet;
     const transport = cfg.transport ?? http(cfg.rpc ?? "https://rpc.testnet.arc.io");
     this.pub = createPublicClient({ chain, transport });
-    this.wallet = createWalletClient({ chain, transport, account: cfg.account });
+    this.wallet = cfg.account ? createWalletClient({ chain, transport, account: cfg.account }) : undefined;
+    if (!cfg.account && !cfg.circle) throw new Error("Steward needs either `account` (a viem account) or `circle` (a Circle wallet)");
   }
 
   async allowance(id: bigint): Promise<Allowance> {
@@ -107,7 +133,29 @@ export class Steward {
     return { maxFeePerGas, maxPriorityFeePerGas: 1_000_000_000n };
   }
 
+  /** Submit through Circle and wait for the on-chain hash. The idempotency key is fixed first, so a retry can't double-submit. */
+  private async writeCircle(address: Hex, functionName: string, args: readonly unknown[]): Promise<Hex> {
+    const c = this.cfg.circle!;
+    const idempotencyKey = globalThis.crypto.randomUUID();
+    const res = await c.client.createContractExecutionTransaction({
+      walletId: c.walletId, contractAddress: address, abiFunctionSignature: SIGNATURES[functionName],
+      abiParameters: args.map((a) => (typeof a === "bigint" || typeof a === "number" ? a.toString() : a)),
+      fee: { type: "level", config: { feeLevel: c.feeLevel ?? "MEDIUM" } }, idempotencyKey,
+    });
+    const id = res.data?.id;
+    if (!id) throw new Error("Circle did not return a transaction id");
+    const deadline = Date.now() + (c.timeoutMs ?? 120_000);
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, c.pollMs ?? 2_000));
+      const t = (await c.client.getTransaction({ id })).data?.transaction;
+      if ((t?.state === "COMPLETE" || t?.state === "CONFIRMED") && t.txHash) return t.txHash as Hex;
+      if (t?.state === "FAILED" || t?.state === "DENIED" || t?.state === "CANCELLED") throw new Error(`Circle tx ${id} ${t.state}: ${t.errorReason ?? ""}`);
+    }
+    throw new Error(`Circle tx ${id} not confirmed in time`);
+  }
+
   private async write(address: Hex, abi: typeof AM_ABI | typeof LOG_ABI, functionName: string, args: readonly unknown[]): Promise<Hex> {
+    if (!this.wallet) return this.writeCircle(address, functionName, args);
     const fees = await this.fees();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hash = await this.wallet.writeContract({ address, abi: abi as any, functionName: functionName as any, args: args as any, ...fees });
