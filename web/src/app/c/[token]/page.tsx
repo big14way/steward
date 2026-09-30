@@ -22,7 +22,7 @@ function Timeline({ m }: { m: Milestone }) {
       if (d.approved_tx && d.mint_tx) { steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, detail: "burned on Arc via CCTP", link: d.approved_tx, tone: "done" }); steps.push({ label: `Received ${usd(d.remainder ?? 0)} USDC on Base Sepolia`, link: d.mint_tx, chain: "base-sepolia", tone: "done" }); }
       else if (d.approved_tx) steps.push({ label: `Owner approved ${usd(d.remainder ?? 0)} USDC`, link: d.approved_tx, tone: "done" });
       else if (d.human_agreed === 0) steps.push({ label: "Owner declined", tone: "bad" });
-      else steps.push({ label: `Waiting for the owner to approve ${usd(d.remainder ?? 0)} USDC`, detail: "they get a notification; nothing to do on your side", tone: "wait" });
+      else steps.push({ label: `Waiting for the owner to approve ${usd(d.remainder ?? 0)} USDC`, detail: "it's in their approvals inbox; nothing to do on your side", tone: "wait" });
     }
     if (d.action === "HOLD") steps.push({ label: "On hold", detail: "add a link to the work and submit again", tone: "wait" });
     if (d.action === "SCREEN_FAIL") steps.push({ label: "Blocked", detail: "this payee failed screening; contact the owner", tone: "bad" });

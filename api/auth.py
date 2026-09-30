@@ -49,6 +49,10 @@ def init() -> None:
         if not c.execute("SELECT 1 FROM workspaces WHERE id=1").fetchone():
             c.execute("INSERT INTO workspaces(id,name,owner_wallet_id,owner_address,created_at) VALUES(1,?,?,?,?)",
                       (os.getenv("WORKSPACE_NAME", "Acme Studio"), os.getenv("OWNER_WALLET_ID", ""), os.getenv("OWNER_ADDRESS", ""), int(time.time())))
+        wcols = {r[1] for r in c.execute("PRAGMA table_info(workspaces)")}
+        if "telegram_chat_id" not in wcols:   # the owner's Telegram chat for approval requests (linked from the dashboard)
+            c.execute("ALTER TABLE workspaces ADD COLUMN telegram_chat_id TEXT")
+        c.execute("CREATE TABLE IF NOT EXISTS telegram_links(code TEXT PRIMARY KEY, workspace_id INT, created_at INT)")
         for table in ("users", "contractors"):
             cols = {r[1] for r in c.execute(f"PRAGMA table_info({table})")}
             if cols and "workspace_id" not in cols:

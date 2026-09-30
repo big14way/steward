@@ -74,6 +74,12 @@ def _wallet(p: dict) -> tuple[str | None, str]:
     return w["owner_wallet_id"], w["owner_address"]
 
 
+def _ws_of_allowance(allowance_id: int) -> dict:
+    with db.conn() as c:
+        r = c.execute("SELECT COALESCE(workspace_id,1) FROM contractors WHERE allowance_id=?", (allowance_id,)).fetchone()
+    return auth.workspace(r[0] if r else 1)
+
+
 def _check(p: dict, allowance_id: int):
     ids = _scope(p)
     if ids is not None and allowance_id not in ids:
@@ -116,7 +122,65 @@ def account(p: dict = Depends(viewer)):
     return {"owner": owner, "owner_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(owner)).call(),
             "agent": agent, "agent_usdc": usdc.functions.balanceOf(Web3.to_checksum_address(agent)).call() if agent else None,
             "in_budgets": funded, "in_reserve": reserve, "budgets": n, "payer": ws["name"], "workspace_id": ws["id"],
+            "telegram": {"connected": bool(ws.get("telegram_chat_id")), "available": bool(os.environ.get("TELEGRAM_BOT_USERNAME"))},
             "faucet": "https://faucet.circle.com", "explorer": EXPLORER}
+
+
+# ---- Telegram: each workspace links its own chat; approval requests go only there, taps act only for that workspace ----
+def _telegram_guard(request: Request, p: dict, owner_ws: dict):
+    """A tap in Telegram arrives as the agent (machine key) plus X-Telegram-Chat. It may only act on its own workspace's budgets."""
+    chat = request.headers.get("x-telegram-chat")
+    if chat is None:
+        return
+    if not owner_ws.get("telegram_chat_id") or str(owner_ws["telegram_chat_id"]) != str(chat):
+        raise HTTPException(403, "This Telegram chat isn't connected to the workspace that owns this budget.")
+
+
+@app.post("/telegram/link-code")
+def telegram_link_code(request: Request):
+    """Owner asks for a one-time link: opening it in Telegram and pressing Start connects this workspace's chat."""
+    p = auth.need(request)
+    bot = os.environ.get("TELEGRAM_BOT_USERNAME", "").lstrip("@")
+    if not bot:
+        raise HTTPException(503, "Telegram isn't set up on this deployment yet.")
+    import secrets as _s
+    code = _s.token_urlsafe(12)
+    with db.conn() as c:
+        c.execute("DELETE FROM telegram_links WHERE created_at < ?", (int(time.time()) - 1800,))
+        c.execute("INSERT INTO telegram_links(code,workspace_id,created_at) VALUES(?,?,?)", (code, p.get("workspace_id") or 1, int(time.time())))
+    return {"url": f"https://t.me/{bot}?start={code}", "bot": bot}
+
+
+class TelegramLinkIn(BaseModel):
+    code: str
+    chat_id: str
+
+
+@app.post("/telegram/link", dependencies=[Depends(agent_auth)])
+def telegram_link(body: TelegramLinkIn):
+    """Called by the bot when an owner presses Start on their one-time link."""
+    with db.conn() as c:
+        row = c.execute("SELECT workspace_id FROM telegram_links WHERE code=? AND created_at > ?", (body.code, int(time.time()) - 1800)).fetchone()
+        if not row:
+            raise HTTPException(404, "This link has expired. Open your dashboard and connect Telegram again.")
+        c.execute("UPDATE workspaces SET telegram_chat_id=? WHERE id=?", (body.chat_id, row[0]))
+        c.execute("DELETE FROM telegram_links WHERE code=?", (body.code,))
+    return {"workspace": auth.workspace(row[0])["name"]}
+
+
+@app.get("/telegram/route", dependencies=[Depends(agent_auth)])
+def telegram_route(allowance_id: int | None = None):
+    """Where the agent should send a message about this budget (None = the launch workspace)."""
+    w = _ws_of_allowance(allowance_id) if allowance_id is not None else auth.workspace(1)
+    return {"chat_id": w.get("telegram_chat_id"), "workspace": w["name"], "workspace_id": w["id"]}
+
+
+@app.post("/telegram/unlink")
+def telegram_unlink(request: Request):
+    p = auth.need(request)
+    with db.conn() as c:
+        c.execute("UPDATE workspaces SET telegram_chat_id=NULL WHERE id=?", (p.get("workspace_id") or 1,))
+    return {"ok": True}
 
 
 class LoginIn(BaseModel):
@@ -332,7 +396,9 @@ def approve(hash: str, body: ApproveIn, request: Request):
     if not d:
         raise HTTPException(404)
     _check(p, d["allowance_id"])
-    wallet_id, _ = _wallet(p)
+    owner_ws = _ws_of_allowance(d["allowance_id"])
+    _telegram_guard(request, p, owner_ws)
+    wallet_id = None if owner_ws["id"] == 1 else owner_ws["owner_wallet_id"]   # the budget's owner signs, whoever taps approve
     if d["action"] == "SCREEN_FAIL":
         raise HTTPException(400, "screen failures cannot be approved")
     if d["approved_tx"]:
@@ -372,6 +438,7 @@ def reject(hash: str, body: ApproveIn, request: Request):
     if not d:
         raise HTTPException(404)
     _check(p, d["allowance_id"])
+    _telegram_guard(request, p, _ws_of_allowance(d["allowance_id"]))
     with db.conn() as c:
         c.execute("UPDATE decisions SET human_agreed=0 WHERE hash=?", (hash,))
         c.execute("UPDATE milestones SET status='rejected' WHERE id=(SELECT milestone_id FROM decisions WHERE hash=?)", (hash,))

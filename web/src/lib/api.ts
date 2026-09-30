@@ -130,5 +130,5 @@ export type ContractorWallet = {
 export type Portal = Contractor & { requests_list: Milestone[]; explorer: string; wallet?: ContractorWallet | null };
 export type Account = {
   owner: string; owner_usdc: number; agent: string | null; agent_usdc: number | null; in_budgets: number; in_reserve: number | null;
-  budgets: number; payer: string; faucet: string; explorer: string;
+  budgets: number; payer: string; faucet: string; explorer: string; telegram?: { connected: boolean; available: boolean };
 };

@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Inbox, ArrowUpRight, ShieldAlert, Check, X } from "lucide-react";
+import { Inbox, ArrowUpRight, ShieldAlert, Check, X, Send } from "lucide-react";
 import Link from "next/link";
-import { get, post, usd, tx, ago, short, ruleText, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone } from "@/lib/api";
+import { get, post, usd, tx, ago, short, ruleText, BASE_SEPOLIA_EXPLORER, type Decision, type Contractor, type Milestone, type Account } from "@/lib/api";
 import { useSession } from "../session";
 import { Avatar, Button, EmptyState, PageHeader, Pill, Skeleton, TxLink, useToast, Card } from "../ui";
 
@@ -15,6 +15,13 @@ export default function Page() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState("");
   const [names, setNames] = useState<Record<number, Contractor>>({});
+  const [tg, setTg] = useState<Account["telegram"] | null>(null);
+  useEffect(() => { if (me) get<Account>("/account").then((a) => setTg(a.telegram ?? null)).catch(() => {}); }, [me]);
+  const connectTelegram = async () => {
+    const r = await post<{ url?: string; detail?: string }>("/telegram/link-code", {});
+    if (r.ok && r.data.url) { window.open(r.data.url, "_blank"); toast.push("ok", "Press Start in Telegram to connect. Approval requests will arrive there."); }
+    else toast.push("err", r.data.detail ?? "Could not start the Telegram link.");
+  };
 
   const load = useCallback(async () => {
     const es = await get<Decision[]>("/escalations").catch(() => [] as Decision[]);
@@ -35,7 +42,10 @@ export default function Page() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Approvals" description="Requests the agent would not pay on its own. Approving pays from your Circle wallet in one transaction — it bypasses the agent's caps but never the funding, the kill switch, or the one-hash-pays-once rule." />
+      <PageHeader title="Approvals" description="Requests the agent would not pay on its own. Approving pays from your Circle wallet in one transaction — it bypasses the agent's caps but never the funding, the kill switch, or the one-hash-pays-once rule."
+        action={tg?.available && me?.role === "owner" ? (tg.connected
+          ? <Pill tone="emerald"><Send className="h-3 w-3 mr-1" />Telegram connected</Pill>
+          : <Button variant="secondary" onClick={connectTelegram}><Send className="h-4 w-4" />Get approvals on Telegram</Button>) : undefined} />
       {items === null && <div className="space-y-3">{[0, 1].map((i) => <Skeleton key={i} className="h-40" />)}</div>}
       {items && items.length === 0 && <EmptyState icon={Inbox} title="Nothing waiting for you" body="The agent pays in-policy requests by itself. Over-policy requests and screening failures show up here." />}
       <div className="space-y-3">
