@@ -128,11 +128,11 @@ and the people being paid get single-purpose private links instead of accounts. 
 | Real USYC: owner's idle USDC into Circle's USYC fund, then redeemed (allowlisted by Circle) | [mint](https://explorer.testnet.arc.io/tx/0xd75d21c951aed4d4a0fb95025d97aa18dc9095bf20038d5f42ee9bf603da45b0) · [redeem](https://explorer.testnet.arc.io/tx/0xd6eda291d124ed8eca1bbfd01e92893c66eebe4e91fe76a7a3bf5a8cf2ca2536) |
 | First agent `pay()` through a Circle wallet (Sep 29) | [0xea63a3b0…de61](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61) |
 
-## 📊 Live stats — Arc Testnet (updated Sep 30, 14:18 UTC, from the hosted API)
+## 📊 Live stats — Arc Testnet (updated Oct 1, 12:25 UTC, from the hosted API)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
-| 9 | 2 | 9 | 21.15 | 22 | 12/0/0/8/2 | 88.9% | 100% | 2.00 | 0 |
+| 9 | 2 | 9 | 21.15 | 22 | 12/0/0/8/2 | 80% | 100% | 2.00 | 0 |
 
 _A copy of `GET /stats`, refreshed daily by a GitHub Action ([.github/workflows/stats.yml](.github/workflows/stats.yml)). Budgets are faucet-sized.
 Before Tameion: 0. Paying businesses: Acme Studio (launch workspace) and webservice co (signed up Sep 30, paying its contractor Lela)._
