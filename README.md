@@ -128,7 +128,7 @@ and the people being paid get single-purpose private links instead of accounts. 
 | Real USYC: owner's idle USDC into Circle's USYC fund, then redeemed (allowlisted by Circle) | [mint](https://explorer.testnet.arc.io/tx/0xd75d21c951aed4d4a0fb95025d97aa18dc9095bf20038d5f42ee9bf603da45b0) · [redeem](https://explorer.testnet.arc.io/tx/0xd6eda291d124ed8eca1bbfd01e92893c66eebe4e91fe76a7a3bf5a8cf2ca2536) |
 | First agent `pay()` through a Circle wallet (Sep 29) | [0xea63a3b0…de61](https://explorer.testnet.arc.io/tx/0xea63a3b0a381c4a9746b92ca2f5551be9138aedf700ba62c4fb185d4e0c6de61) |
 
-## 📊 Live stats — Arc Testnet (updated Oct 8, 12:48 UTC, from the hosted API)
+## 📊 Live stats — Arc Testnet (updated Oct 9, 12:33 UTC, from the hosted API)
 
 | Allowances | Payers | Contractors | USDC paid | Decisions | PAY/PARTIAL/HOLD/ESCALATE/SCREEN_FAIL | Human agreed % | On-time % | USYC swept | SDK integrators |
 |---|---|---|---|---|---|---|---|---|---|
