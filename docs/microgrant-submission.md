@@ -7,7 +7,7 @@
 **Live on Arc mainnet:** https://steward-mainnet.vercel.app
 **Repo:** https://github.com/big14way/steward (MIT)
 **Builder:** GitHub https://github.com/big14way · X https://x.com/big14teru
-**Wallet for the grant (USDC on Arc):** 0x526dd81859c728963f1a6007110f24014F520FE2
+**Wallet for the grant (USDC on Arc):** 0xCBb2e2fCa3CB099bBDC44cc44E6d262BB5931600
 
 ## What it does
 
