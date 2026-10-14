@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,7 +39,7 @@ export default function SignUp() {
         <div className="text-center space-y-2">
           <div className="mx-auto h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 grid place-items-center"><ShieldCheck className="h-6 w-6 text-emerald-400" /></div>
           <h1 className="text-2xl font-semibold tracking-tight">Create your workspace</h1>
-          <p className="text-sm text-zinc-400">For a business that pays contractors. Free on Arc Testnet.</p>
+          <p className="text-sm text-zinc-400">For a business that pays contractors. Free on {NETWORK}.</p>
         </div>
         <Card className="p-5">
           <form className="space-y-3" onSubmit={submit}>

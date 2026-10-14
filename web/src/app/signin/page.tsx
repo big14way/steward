@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -58,7 +59,7 @@ function SignIn() {
             <>
               <div className="my-4 flex items-center gap-3 text-xs text-zinc-500"><div className="h-px flex-1 bg-zinc-800" />or<div className="h-px flex-1 bg-zinc-800" /></div>
               <Button variant="secondary" className="w-full justify-center" disabled={!!busy} onClick={() => go("demo")}><FlaskConical className="h-4 w-4" />{busy === "demo" ? "Opening the demo…" : "Explore the live demo"}</Button>
-              <p className="mt-2 text-xs text-zinc-500 text-center">The demo can view, approve and decline real testnet requests. It can’t add or fund budgets.</p>
+              <p className="mt-2 text-xs text-zinc-500 text-center">The demo can view, approve and decline real requests on {NETWORK}. It can’t add or fund budgets.</p>
             </>
           )}
         </Card>

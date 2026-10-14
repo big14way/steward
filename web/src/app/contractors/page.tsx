@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Link2, Copy, Check, Plus, ArrowUpRight, History, Ban, ArrowRight, ArrowLeft } from "lucide-react";
-import { get, post, usd, addr, short, when, periodLabel, type Contractor } from "@/lib/api";
+import { get, post, usd, addr, tx, short, when, periodLabel, type Contractor } from "@/lib/api";
 import { useSession } from "../session";
 import { Avatar, Button, Card, EmptyState, Field, Modal, PageHeader, Pill, Progress, Skeleton, inputCls, useToast } from "../ui";
 
@@ -44,7 +44,7 @@ export default function Page() {
   };
   const fund = async (c: Contractor, v: string) => {
     setBusy(c.id); const r = await post<{ detail?: string; txHash?: string }>(`/contractors/${c.id}/fund`, { amount: Math.round(+v * 1e6) }); setBusy(""); setInline(null);
-    r.ok ? toast.push("ok", <>Topped up {c.name} by {v} USDC. <a className="underline" href={`https://explorer.testnet.arc.io/tx/${r.data.txHash}`} target="_blank">tx</a></>) : toast.push("err", r.data.detail ?? "Top-up failed. Is the owner wallet funded?"); load();
+    r.ok ? toast.push("ok", <>Topped up {c.name} by {v} USDC. <a className="underline" href={tx(r.data.txHash)} target="_blank">tx</a></>) : toast.push("err", r.data.detail ?? "Top-up failed. Is the owner wallet funded?"); load();
   };
   const resetPayout = async (c: Contractor) => {
     setBusy(c.id); const r = await post<{ detail?: string }>(`/contractors/${c.id}/reset-payout`, {}); setBusy("");

@@ -748,12 +748,12 @@ def _sign_with_circle(wallet_id: str, allowance_id: int, title: str, amount: int
 
 
 def _create_circle_wallet(name: str, kind: str = "contractor") -> tuple[str, str]:
-    """Create a Circle Developer-Controlled EOA wallet on ARC-TESTNET in our wallet set. Returns (wallet_id, address)."""
+    """Create a Circle Developer-Controlled EOA wallet on CIRCLE_BLOCKCHAIN (ARC-TESTNET or ARC) in our wallet set. Returns (wallet_id, address)."""
     from circle.web3 import developer_controlled_wallets as dcw
     from circle.web3 import utils
     client = utils.init_developer_controlled_wallets_client(api_key=os.environ["CIRCLE_API_KEY"], entity_secret=os.environ["CIRCLE_ENTITY_SECRET"])
     res = dcw.WalletsApi(client).create_wallet(dcw.CreateWalletRequest.from_dict({
-        "walletSetId": os.environ["CIRCLE_WALLET_SET_ID"], "blockchains": ["ARC-TESTNET"], "count": 1, "accountType": "EOA",
+        "walletSetId": os.environ["CIRCLE_WALLET_SET_ID"], "blockchains": [os.getenv("CIRCLE_BLOCKCHAIN", "ARC-TESTNET")], "count": 1, "accountType": "EOA",
         "metadata": [{"name": f"{kind}:{name}"[:50]}]}))
     w = res.data.wallets[0]
     return w.id, w.address

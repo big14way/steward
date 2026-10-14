@@ -1,3 +1,4 @@
+import { NETWORK, CHAIN_ID } from "@/lib/net";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, ScrollText, Inbox, Wallet, Link2, Code2, CheckCircle2, ArrowUpRight, ExternalLink } from "lucide-react";
 import { get, DEMO_ENABLED, type Stats } from "@/lib/api";
@@ -32,7 +33,7 @@ export default async function Landing() {
       {/* hero */}
       <section className="pt-8 sm:pt-16 text-center max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-400 mb-6">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live on Arc Testnet · Circle wallets · Tameion 2026
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live on {NETWORK} · Circle wallets · Tameion 2026
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-balance">Let your AI agent pay people.<br /><span className="text-zinc-400">Within limits it can’t cross.</span></h1>
         <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -46,7 +47,7 @@ export default async function Landing() {
             <a href="https://github.com/big14way/steward" target="_blank" className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-5 py-3 hover:bg-zinc-800"><ExternalLink className="h-4 w-4" />Source & contracts</a>
           )}
         </div>
-        {DEMO_ENABLED && <p className="mt-3 text-xs text-zinc-500">The demo opens a real studio’s workspace on Arc Testnet. You can approve or decline actual requests.</p>}
+        {DEMO_ENABLED && <p className="mt-3 text-xs text-zinc-500">The demo opens a real studio’s workspace on {NETWORK}. You can approve or decline actual requests.</p>}
       </section>
 
       {/* product shot */}
@@ -60,7 +61,7 @@ export default async function Landing() {
           {strip.map(([k, v]) => (
             <div key={k}><div className="text-2xl sm:text-3xl font-semibold tabular-nums">{v}</div><div className="text-xs text-zinc-500 mt-1">{k}</div></div>
           ))}
-          <div className="col-span-2 sm:col-span-5 text-[11px] text-zinc-600">live numbers from the contract and the agent’s audit log · Arc Testnet</div>
+          <div className="col-span-2 sm:col-span-5 text-[11px] text-zinc-600">live numbers from the contract and the agent’s audit log · {NETWORK}</div>
         </section>
       )}
 
@@ -140,7 +141,7 @@ const r = await s.decide({
       <section className="max-w-4xl mx-auto text-center">
         <div className="text-xs uppercase tracking-wide text-zinc-500">Built on</div>
         <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
-          {[["Arc", "USDC-native L1, chain 5042002"], ["Circle Developer-Controlled Wallets", "owner, agent and contractor wallets"], ["Circle Contracts", "deployed & imported"], ["CCTP V2", "payouts to Base Sepolia"], ["USYC / ERC-4626", "idle cash earns"]].map(([n, d]) => (
+          {[["Arc", `USDC-native L1, chain ${CHAIN_ID}`], ["Circle Developer-Controlled Wallets", "owner, agent and contractor wallets"], ["Circle Contracts", "deployed & imported"], ["CCTP V2", "payouts to Base Sepolia"], ["USYC / ERC-4626", "idle cash earns"]].map(([n, d]) => (
             <div key={n} className="rounded-full border border-zinc-800 bg-zinc-900/60 px-4 py-2"><span className="font-medium">{n}</span><span className="text-zinc-500"> · {d}</span></div>
           ))}
         </div>

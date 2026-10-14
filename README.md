@@ -193,6 +193,54 @@ Businesses pay; contractors never do. 0.5% of each payout, capped at $5 per paym
 Circle wallets: owner `0x7bc79b07faa88299667ce65283129b314cb15c2f` · agent `0x380a28198b0759ca4b67d5b03ffb5f68a77c8a47` · CCTP relayer on Base Sepolia
 `0x55edc6c084530c05da0827bc419dfc35adde6019`. Deploy transactions and the superseded YieldSweeper v1 are listed in [CIRCLE_INTEGRATION.md](CIRCLE_INTEGRATION.md).
 
+### Arc Mainnet (Oct 14, 2026)
+
+The core is live on Arc mainnet (chain 5042) at the same addresses as testnet, deployed by the same key at nonce 0:
+
+| Contract | Address | Deploy tx |
+|---|---|---|
+| AllowanceManager | [`0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6`](https://explorer.arc.io/address/0x3AAfC635a1D1391c9FD8b5B9d8A518Fe980cb7E6) | [`0x7d2fe476…747a`](https://explorer.arc.io/tx/0x7d2fe4761d7a1732ac7fd6167cd457bf8e8052bca62192fd5321f0702b54747a) |
+| AuditLog | [`0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866`](https://explorer.arc.io/address/0x89264D27AFbCb2Ac90b8a3802340C26Ea1326866) | [`0xda43ccd2…ba33`](https://explorer.arc.io/tx/0xda43ccd2ef09f9a6be83eaedfb038fb8e423660fac3cfe748caad0cc1b1dba33) |
+
+Both deploys cost 0.024 USDC. The USDC itself came in over CCTP V2 with Circle's forwarding hook from Ethereum
+([burn](https://etherscan.io/tx/0x925393dc6e8fdd7d0188e59b14b82b9f46f2ebe9db3509503cb72669a7548444)), minted on Arc ten seconds later.
+Mainnet runs as a second instance beside testnet: **https://steward-mainnet.vercel.app**, API and agent on Railway, local owner and agent keys
+(Circle's mainnet wallets are a separate onboarding), contractors bring their own Arc address, no yield reserve or CCTP payouts yet.
+First decisions on mainnet (Oct 14): the agent paid a 0.25 USDC request within policy
+([record](https://explorer.arc.io/tx/0x7e94ed2091bc23eaec1b607a8daf7accb3c64ec41068b3ffb888abc80346a540) ·
+[pay](https://explorer.arc.io/tx/0x23f89ae7df8fbceb69bc31d8b19cd05799f68d889d443d79cb2d01452bd1124f)) and escalated a 0.70 USDC request
+over the 0.50 per-payment cap to the owner ([escalate](https://explorer.arc.io/tx/0x35ced1df8896a46d23d911add8057b58a70bf4f5443e0f73a7286aac420f41c9)),
+who approved it with one click ([approveAndPay](https://explorer.arc.io/tx/0xc96248880e223910f0d67c17577a745cf277bb8cdb0ea5aaf2a791be50390f1d)); both reasons written by Claude.
+Mainnet `GET /stats` after that: 0.95 USDC paid, 2 decisions, owner agreed 100%, paid within 24 h 100%. How it was set up and what is left out: [docs/mainnet.md](docs/mainnet.md).
+
+### What Arc Mainnet costs
+
+Measured Oct 8, 2026 on chain 5042 (`https://rpc.mainnet.arc.io`): the base fee is 20 gwei, paid in USDC, so 1M gas costs 0.02 USDC.
+Deploy gas comes from the testnet deploy receipts (same bytecode); a `forge script` dry run on a mainnet fork agrees.
+
+| Deploy | Gas | USDC |
+|---|---:|---:|
+| AllowanceManager | 1,092,981 | 0.022 |
+| AuditLog | 129,641 | 0.003 |
+| YieldSweeper | 624,830 | 0.012 |
+| MockUSYC (vault stand-in; real USYC needs Circle to allowlist the holder) | 1,072,484 | 0.021 |
+| **All four** | **2,919,936** | **0.058** |
+
+`forge script` checks the deployer can cover 1.3× the gas at twice the base fee before it broadcasts, so keep about 0.15 USDC in the deployer even though the deploy spends 0.058.
+
+| Per call (worst case in `forge test --gas-report`, plus 23k for the transaction) | Gas | USDC |
+|---|---:|---:|
+| `create` | 189,524 | 0.0038 |
+| `fund` (plus 0.0014 for the USDC approve) | 106,346 | 0.0021 |
+| `pay` | 126,185 | 0.0025 |
+| `AuditLog.record` (estimate) | ~50,000 | 0.0010 |
+| `escalate` / `approveAndPay` | 51,034 / 114,468 | 0.0010 / 0.0023 |
+| `sweep` / `redeem` | 142,813 / 84,473 | 0.0029 / 0.0017 |
+
+A month of demo use (3 contractors, 10 requests, 4 sweeps, 2 redeems) is about 3.9M gas, 0.08 USDC. Going live needs about 5 USDC:
+0.40 of gas spread over the deployer, owner and agent, 3 to fund three contractor allowances (that money moves to the contractors, it is not
+spent), and a buffer for the exchange withdrawal fee.
+
 ## SDK
 
 ```ts

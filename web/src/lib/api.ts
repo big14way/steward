@@ -4,7 +4,8 @@
 // Server components: API_INTERNAL directly.
 export const PUBLIC_API = process.env.NEXT_PUBLIC_API || "/api";
 const API = typeof window === "undefined" ? (process.env.API_INTERNAL ?? (PUBLIC_API.startsWith("/") ? "http://127.0.0.1:8001" : PUBLIC_API)) : PUBLIC_API;
-export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://explorer.testnet.arc.io";
+import { DEFAULT_EXPLORER } from "./net";
+export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? DEFAULT_EXPLORER;
 export const BASE_SEPOLIA_EXPLORER = "https://base-sepolia.blockscout.com";
 
 export const get = <T,>(p: string, headers: Record<string, string> = {}) =>

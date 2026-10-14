@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ export default function Demo() {
         : err ? <p className="text-sm text-red-300">{err}</p>
         : <>
             <div className="font-medium text-lg">Opening the demo…</div>
-            <p className="text-sm text-zinc-400">You’ll explore Acme Studio’s workspace on Arc Testnet. Approve or decline real requests; the agent and the contract do the rest.</p>
+            <p className="text-sm text-zinc-400">You’ll explore Acme Studio’s workspace on {NETWORK}. Approve or decline real requests; the agent and the contract do the rest.</p>
           </>}
     </Card>
   );

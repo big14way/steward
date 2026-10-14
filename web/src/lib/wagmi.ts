@@ -1,14 +1,14 @@
-// ADAPT (Day 4): viem ships `arcTestnet` (id 5042002, USDC 18-dp native, rpc.testnet.arc.network, arcscan explorer),
-// and Circle's use-arc skill says a custom chain definition is never required — so no defineChain here.
-import { arcTestnet } from "viem/chains";
+// The chain comes from lib/net.ts (NEXT_PUBLIC_CHAIN_ID): viem's `arc` (5042) or `arcTestnet` (5042002).
+import { arc, arcTestnet } from "viem/chains";
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
+import { chain, RPC } from "./net";
 
-export { arcTestnet };
+export { chain, chain as arcTestnet };
 
 export const config = createConfig({
-  chains: [arcTestnet],
+  chains: [chain],
   connectors: [injected()],
-  transports: { [arcTestnet.id]: http(process.env.NEXT_PUBLIC_ARC_RPC ?? "https://rpc.testnet.arc.io") },
+  transports: { [arc.id]: http(RPC), [arcTestnet.id]: http(RPC) },
   ssr: true,
 });

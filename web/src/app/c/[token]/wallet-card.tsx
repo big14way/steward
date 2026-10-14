@@ -1,7 +1,8 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useState } from "react";
 import { Wallet, ArrowUpRight, TrendingUp, Lock } from "lucide-react";
-import { post, usd, short, type ContractorWallet } from "@/lib/api";
+import { post, usd, short, tx, type ContractorWallet } from "@/lib/api";
 import { Button, Card, Field, Pill, TxLink, inputCls, useToast } from "../../ui";
 
 const KIND: Record<string, string> = { send: "Sent to your wallet", usyc_mint: "Moved into USYC", usyc_redeem: "Back from USYC" };
@@ -21,7 +22,7 @@ export default function WalletCard({ token, w, payer, onChange }: { token: strin
     const r = await post<{ txHash?: string; amount?: number; to?: string; detail?: string }>(`/c/${token}/withdraw`, { to, confirm, amount: amt });
     setBusy("");
     if (!r.ok) { toast.push("err", r.data.detail ?? `Failed (${r.status})`); return; }
-    toast.push("ok", <>Sent {usd(r.data.amount ?? 0)} USDC to {short(r.data.to, 6)}. <a className="underline" href={`https://explorer.testnet.arc.io/tx/${r.data.txHash}`} target="_blank">View on Arc Testnet</a></>);
+    toast.push("ok", <>Sent {usd(r.data.amount ?? 0)} USDC to {short(r.data.to, 6)}. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on {NETWORK}</a></>);
     setTo(""); setConfirm(""); setAmount(""); onChange();
   };
   const earn = async (redeem: boolean) => {

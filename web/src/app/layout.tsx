@@ -1,3 +1,4 @@
+import { NETWORK, CHAIN_ID } from "@/lib/net";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -22,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Chrome />
           <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">{children}</main>
           <footer className="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-xs text-zinc-600">
-            Arc Testnet · chain 5042002 · USDC · contracts + docs at <a className="underline" href="https://github.com/big14way/steward" target="_blank">github.com/big14way/steward</a>
+            {NETWORK} · chain {CHAIN_ID} · USDC · contracts + docs at <a className="underline" href="https://github.com/big14way/steward" target="_blank">github.com/big14way/steward</a>
           </footer>
         </Providers>
       </body>

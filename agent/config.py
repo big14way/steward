@@ -12,6 +12,8 @@ USDC = "0x3600000000000000000000000000000000000000"
 ALLOWANCE_MANAGER = os.environ["ALLOWANCE_MANAGER"]
 AUDIT_LOG = os.environ["AUDIT_LOG"]
 YIELD_SWEEPER = os.getenv("YIELD_SWEEPER")
+EXPLORER = os.getenv("EXPLORER", "https://explorer.testnet.arc.io")
+NETWORK_NAME = os.getenv("NETWORK_NAME", "Arc Testnet")
 
 # ADAPT (Day 2): SIGNER=local signs with AGENT_PRIVATE_KEY on this box; SIGNER=circle routes every write through a
 # Circle Developer-Controlled Wallet (api/circle_client.py) so no agent key exists locally. Reads always use web3.

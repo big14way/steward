@@ -1,3 +1,4 @@
+import { MAINNET, NETWORK } from "@/lib/net";
 import Link from "next/link";
 import { ArrowUpRight, Users, Inbox, ScrollText, Wallet, Coins, CheckCheck, Timer, PiggyBank, Gauge } from "lucide-react";
 import { usd, ago, short, ruleText, decisionLabel, amountLabel, EXPLORER, type Stats, type Decision, type Account, type Treasury } from "@/lib/api";
@@ -32,8 +33,16 @@ export default async function Dashboard() {
           <p className="mt-1 text-sm text-zinc-400">Three steps to your first payment. Your Circle wallet on Arc is ready; it signs every budget and approval for you.</p>
           <ol className="mt-4 grid md:grid-cols-3 gap-3 text-sm">
             <li className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
-              <div className="font-medium">1 · Add test USDC to your wallet</div>
-              {a.starter?.available ? (
+              <div className="font-medium">1 · Add {MAINNET ? "" : "test "}USDC to your wallet</div>
+              {MAINNET ? (
+                <>
+                  <p className="mt-1 text-zinc-400">Send USDC on <b>Arc</b> to your owner address from any wallet or exchange that supports Arc (gas is paid in USDC, so a few USDC covers budgets and fees).</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <code className="text-[11px] bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1">{short(a.owner, 6)}</code>
+                    <CopyButton text={a.owner} label="Copy address" />
+                  </div>
+                </>
+              ) : a.starter?.available ? (
                 <>
                   <p className="mt-1 text-zinc-400">STEWARD sends your wallet {usd(a.starter.amount)} test USDC in one click, enough for a first budget and fees. You can add more any time from Circle&apos;s faucet (choose <b>Arc Testnet</b>).</p>
                   <div className="mt-3 flex flex-wrap items-start gap-2">
@@ -78,7 +87,7 @@ export default async function Dashboard() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/contractors" className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500 text-zinc-950 px-4 py-2 text-sm font-medium hover:bg-emerald-400"><Users className="h-4 w-4" />Add a contractor</Link>
             <Link href="/approvals" className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-700"><Inbox className="h-4 w-4" />Approvals</Link>
-            {a && <a href={a.faucet} target="_blank" className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-700"><Coins className="h-4 w-4" />Get test USDC<ArrowUpRight className="h-3.5 w-3.5 text-zinc-500" /></a>}
+            {a && !MAINNET && <a href={a.faucet} target="_blank" className="inline-flex items-center gap-1.5 rounded-md bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-700"><Coins className="h-4 w-4" />Get test USDC<ArrowUpRight className="h-3.5 w-3.5 text-zinc-500" /></a>}
           </div>
           {a && <div className="mt-4 text-[11px] text-zinc-600 font-mono">owner <a className="underline" href={`${EXPLORER}/address/${a.owner}`} target="_blank">{short(a.owner)}</a>{a.agent && <> · agent <a className="underline" href={`${EXPLORER}/address/${a.agent}`} target="_blank">{short(a.agent)}</a></>}</div>}
         </Card>

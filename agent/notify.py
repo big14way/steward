@@ -11,11 +11,10 @@ import logging
 
 import httpx
 
-from config import API_BASE, API_SECRET, TELEGRAM_CHAT, TELEGRAM_TOKEN
+from config import API_BASE, API_SECRET, EXPLORER, NETWORK_NAME, TELEGRAM_CHAT, TELEGRAM_TOKEN
 
 log = logging.getLogger("steward.notify")
 _app = None
-EXPLORER = "https://explorer.testnet.arc.io"
 
 
 def enabled() -> bool:
@@ -62,7 +61,7 @@ async def _on_button(update, context) -> None:
     kind, hash_ = q.data.split(":", 1)
     res = await _act(hash_, kind, q.message.chat_id)
     if res.get("status_code") == 200 and kind == "approve":
-        txt = f"✅ Approved and paid · <a href=\"{EXPLORER}/tx/{res.get('txHash')}\">view on Arc Testnet</a>"
+        txt = f"✅ Approved and paid · <a href=\"{EXPLORER}/tx/{res.get('txHash')}\">view on {NETWORK_NAME}</a>"
     elif res.get("status_code") == 200:
         txt = "🚫 Declined"
     else:

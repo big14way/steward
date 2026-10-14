@@ -4,11 +4,13 @@ The owner's Circle wallet is allowlisted by Circle (Sep 30, 2026), so idle owner
 budget needs topping up. Addresses from docs.arc.network (contract-addresses): Teller 0x9fdF…105A, USYC 0xe918…b86C.
 The deployed YieldSweeper still points at MockUSYC (its vault is immutable); this module is the real-USYC path.
 """
+import os
 import circle_client as cc
 
-TELLER = "0x9fdF14c5B14173D74C08Af27AebFf39240dC105A"
-ENTITLEMENTS = "0xCC205224862C7641930c87679E98999d23C26113"   # RolesAuthority: who may call the Teller (Circle's allowlist)
-USYC = "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C"
+# Testnet defaults (docs.arc.io contract-addresses). Mainnet: Teller 0x51A8CE47dC08ba5CD19c7aa84EA6fD6664f60f9b, USYC 0x8a5D989Bbb96929F689B0200f435f53dA42bF490.
+TELLER = os.getenv("USYC_TELLER", "0x9fdF14c5B14173D74C08Af27AebFf39240dC105A")
+ENTITLEMENTS = os.getenv("USYC_ENTITLEMENTS", "0xCC205224862C7641930c87679E98999d23C26113")   # RolesAuthority: who may call the Teller (Circle's allowlist)
+USYC = os.getenv("USYC_TOKEN", "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C")
 USDC = "0x3600000000000000000000000000000000000000"
 
 TELLER_ABI = [

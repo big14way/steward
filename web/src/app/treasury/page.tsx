@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useCallback, useEffect, useState } from "react";
 import { Landmark, PiggyBank, TrendingUp } from "lucide-react";
 import { get, post, usd, tx, addr, short, when, ACTION_TEXT, type Treasury } from "@/lib/api";
@@ -16,11 +17,11 @@ export default function Page() {
   const [uBusy, setUBusy] = useState<"" | "in" | "out">("");
   const usycIn = async () => {
     setUBusy("in"); const r = await post<{ txHash?: string; detail?: string }>("/treasury/usyc/deposit", { amount: Math.round(+uAmt * 1e6) }); setUBusy("");
-    r.ok ? toast.push("ok", <>Moved {uAmt} USDC into USYC. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on Arc Testnet</a></>) : toast.push("err", r.data.detail ?? "Failed"); setUAmt(""); load();
+    r.ok ? toast.push("ok", <>Moved {uAmt} USDC into USYC. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on {NETWORK}</a></>) : toast.push("err", r.data.detail ?? "Failed"); setUAmt(""); load();
   };
   const usycOut = async () => {
     setUBusy("out"); const r = await post<{ txHash?: string; usdc_received?: number; detail?: string }>("/treasury/usyc/redeem", { all: true }); setUBusy("");
-    r.ok ? toast.push("ok", <>Redeemed USYC for {usd(r.data.usdc_received ?? 0)} USDC. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on Arc Testnet</a></>) : toast.push("err", r.data.detail ?? "Failed"); load();
+    r.ok ? toast.push("ok", <>Redeemed USYC for {usd(r.data.usdc_received ?? 0)} USDC. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on {NETWORK}</a></>) : toast.push("err", r.data.detail ?? "Failed"); load();
   };
   const load = useCallback(() => get<Treasury>("/treasury").then(setT).catch(() => setT({ events: [] })), []);
   useEffect(() => { load(); const i = setInterval(load, 20000); return () => clearInterval(i); }, [load]);

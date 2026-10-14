@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSignTypedData, useChainId, useSwitchChain } from "wagmi";
 import { get, post, usd, tx, when, type Milestone } from "@/lib/api";
-import { arcTestnet } from "@/lib/wagmi";
+import { chain, CHAIN_ID, NETWORK, RPC } from "@/lib/net";
 
 const AM = process.env.NEXT_PUBLIC_ALLOWANCE_MANAGER as `0x${string}`;
-const domain = { name: "STEWARD", version: "1", chainId: 5042002, verifyingContract: AM } as const;
+const domain = { name: "STEWARD", version: "1", chainId: CHAIN_ID, verifyingContract: AM } as const;
 const types = {
   Milestone: [
     { name: "allowanceId", type: "uint256" }, { name: "title", type: "string" }, { name: "amount", type: "uint128" },
@@ -73,7 +73,7 @@ export default function Page() {
           ))
         )}
         {connectError && <div className="text-red-300 text-sm">{connectError.message.split("\n")[0]}</div>}
-        <div className="text-xs text-zinc-500">Network: Arc Testnet (chain id 5042002, RPC https://rpc.testnet.arc.io, currency USDC). The page adds it to MetaMask for you when you switch.</div>
+        <div className="text-xs text-zinc-500">Network: {NETWORK} (chain id {CHAIN_ID}, RPC {RPC}, currency USDC). The page adds it to MetaMask for you when you switch.</div>
       </div>
     );
   }
@@ -82,8 +82,8 @@ export default function Page() {
       <div className="space-y-3">
         <h1 className="text-xl font-semibold">Submit a milestone</h1>
         <div className="text-xs text-zinc-400 break-all">Signed in as {address} <button className="underline ml-2" onClick={() => disconnect()}>disconnect</button></div>
-        {chainId !== arcTestnet.id && (
-          <div className="text-amber-300 text-xs">Wrong network (chain {chainId}). <button className="underline" onClick={() => switchChain({ chainId: arcTestnet.id })}>Switch to Arc Testnet</button></div>
+        {chainId !== chain.id && (
+          <div className="text-amber-300 text-xs">Wrong network (chain {chainId}). <button className="underline" onClick={() => switchChain({ chainId: chain.id })}>Switch to {NETWORK}</button></div>
         )}
         {([["allowance_id", "Allowance id"], ["title", "Title (becomes the on-chain memo)"], ["amount", "Amount (USDC)"], ["evidence_url", "Evidence URL (missing evidence → HOLD)"]] as const).map(([k, label]) => (
           <label key={k} className="block text-sm"><span className="text-zinc-400">{label}</span>
