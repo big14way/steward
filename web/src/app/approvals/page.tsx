@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useCallback, useEffect, useState } from "react";
 import { Inbox, ArrowUpRight, ShieldAlert, Check, X, Send } from "lucide-react";
 import Link from "next/link";
@@ -42,7 +43,7 @@ export default function Page() {
     setBusy(x.hash);
     const r = await post<{ txHash?: string; mint_tx?: string; chain?: string; detail?: string }>(`/escalations/${x.hash}/${kind}`, {});
     setBusy("");
-    if (r.ok) toast.push("ok", kind !== "approve" ? "Declined." : r.data.mint_tx ? <>Paid {usd(x.remainder)} USDC on Base Sepolia via CCTP. <a className="underline" href={tx(r.data.txHash)} target="_blank">Burn on Arc Testnet</a> · <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${r.data.mint_tx}`} target="_blank">Mint on Base Sepolia</a></> : <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on Arc Testnet</a></>);
+    if (r.ok) toast.push("ok", kind !== "approve" ? "Declined." : r.data.mint_tx ? <>Paid {usd(x.remainder)} USDC on Base Sepolia via CCTP. <a className="underline" href={tx(r.data.txHash)} target="_blank">Burn on {NETWORK}</a> · <a className="underline" href={`${BASE_SEPOLIA_EXPLORER}/tx/${r.data.mint_tx}`} target="_blank">Mint on Base Sepolia</a></> : <>Paid {usd(x.remainder)} USDC from the owner wallet. <a className="underline" href={tx(r.data.txHash)} target="_blank">View on {NETWORK}</a></>);
     else toast.push("err", r.data.detail ?? `Failed (${r.status})`);
     load();
   };
