@@ -41,7 +41,7 @@ PRICE_MIN, PRICE_MAX = 900_000, 2_000_000   # 0.90 to 2.00 USDC per USYC
 def price_guard(pos: dict):
     from fastapi import HTTPException
     if not pos.get("price_ok", True):
-        raise HTTPException(409, f"USYC's testnet price feed reads {pos['price'] / 1e6:.2f} USDC per USYC, far from its normal ~1.1. "
+        raise HTTPException(409, f"USYC's price feed reads {pos['price'] / 1e6:.2f} USDC per USYC, far from its normal ~1.1. "
                                  "Moving money in or out now would be mispriced, so USYC is paused until the price is back in range.")
 
 

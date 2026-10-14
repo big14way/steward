@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Link2, Copy, Check, Plus, ArrowUpRight, History, Ban, ArrowRight, ArrowLeft } from "lucide-react";
@@ -174,7 +175,7 @@ export default function Page() {
           </Card>
         ))}
       </div>
-      <div className="mt-6 text-xs text-zinc-600">Advanced: contractors who prefer to sign requests with their own wallet can use <Link className="underline" href="/contractor">/contractor</Link> (MetaMask on Arc Testnet).</div>
+      <div className="mt-6 text-xs text-zinc-600">Advanced: contractors who prefer to sign requests with their own wallet can use <Link className="underline" href="/contractor">/contractor</Link> (MetaMask on {NETWORK}).</div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { NETWORK } from "@/lib/net";
 import { useState } from "react";
 import Link from "next/link";
 import { LogOut, FlaskConical, ChevronDown, LogIn } from "lucide-react";
@@ -40,7 +41,7 @@ export default function AccountMenu() {
           </div>
           <p className="text-sm text-zinc-400">
             {demo
-              ? "You are exploring Acme Studio's workspace. Approvals pay real testnet USDC from its Circle wallet. Adding or funding budgets needs the owner."
+              ? "You are exploring Acme Studio's workspace. Approvals pay real USDC on {NETWORK} from its Circle wallet. Adding or funding budgets needs the owner."
               : "You can add contractors, fund and end budgets, move reserve funds, and approve requests. Every action is signed by your Circle wallet on Arc."}
           </p>
           <Button variant="secondary" onClick={signOut}><LogOut className="h-4 w-4" />{demo ? "Leave the demo" : "Sign out"}</Button>

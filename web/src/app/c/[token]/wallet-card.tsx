@@ -70,7 +70,7 @@ export default function WalletCard({ token, w, payer, onChange }: { token: strin
           <Pill tone={w.usyc?.allowlisted ? "emerald" : "zinc"}>{w.usyc?.allowlisted ? "USYC available" : "Needs Circle allowlisting"}</Pill>
         </div>
         {w.usyc?.price_ok === false ? (
-          <p className="text-xs text-amber-300">USYC's testnet price feed is out of range right now ({(w.usyc.price / 1e6).toFixed(2)} USDC per USYC instead of about 1.1), so moving money in or out is paused. Your USDC is safe where it is.</p>
+          <p className="text-xs text-amber-300">USYC's price feed is out of range right now ({(w.usyc.price / 1e6).toFixed(2)} USDC per USYC instead of about 1.1), so moving money in or out is paused. Your USDC is safe where it is.</p>
         ) : w.usyc?.allowlisted ? (
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" disabled={!!busy || w.available <= 0} onClick={() => earn(false)}>{busy === "earn" ? "Moving…" : amount ? `Move ${amount} USDC into USYC` : "Move my balance into USYC"}</Button>

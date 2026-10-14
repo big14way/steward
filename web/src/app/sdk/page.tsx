@@ -1,8 +1,9 @@
-const TS = `import { Steward } from "steward-arc-sdk";
+const TS = `import { NETWORK } from "@/lib/net";
+import { Steward } from "steward-arc-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 
 const s = new Steward({
-  allowanceManager: "0x…",           // deployed on Arc Testnet (see README)
+  allowanceManager: "0x…",           // same address on Arc mainnet and testnet (see README)
   auditLog: "0x…",
   account: privateKeyToAccount(process.env.AGENT_PK as \`0x\${string}\`),
 });
